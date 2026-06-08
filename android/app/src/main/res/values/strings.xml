@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kamille Events Manager</string>
+    <string name="title_activity_main">Kamille Events Manager</string>
+    <string name="package_name">com.kamille.events</string>
+    <string name="custom_url_scheme">com.kamille.events</string>
+</resources>

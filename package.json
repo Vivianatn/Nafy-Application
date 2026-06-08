@@ -1,0 +1,79 @@
+{
+    "name": "kamille-events-manager",
+    "version": "1.0.0",
+    "description": "Kamille Events Manager Application",
+    "homepage": "https://kamille-events.fr",
+    "author": {
+        "name": "Vivian",
+        "email": "vivian.antoine@hotmail.com"
+    },
+    "main": "electron/main.js",
+    "devDependencies": {
+        "@babel/core": "^7.17.0",
+        "@babel/preset-env": "^7.16.0",
+        "@symfony/webpack-encore": "^6.0.0",
+        "@vue/compiler-sfc": "^3.5.35",
+        "concurrently": "^9.2.1",
+        "core-js": "^3.38.0",
+        "electron": "^41.7.1",
+        "electron-builder": "^26.8.1",
+        "regenerator-runtime": "^0.13.9",
+        "sass": "^1.100.0",
+        "sass-loader": "^16.0.8",
+        "typescript": "^5.9.3",
+        "vue-loader": "^17.4.2",
+        "wait-on": "^9.0.10",
+        "webpack": "^5.72",
+        "webpack-cli": "^6.0.0"
+    },
+    "license": "UNLICENSED",
+    "private": true,
+    "scripts": {
+        "dev-server": "encore dev-server",
+        "dev": "encore dev",
+        "watch": "encore dev --watch",
+        "build": "encore production --progress",
+        "cap:sync": "npx cap sync android",
+        "cap:open": "npx cap open android",
+        "android:prepare": "npm run build && npx cap sync android",
+        "android:apk": "npm run android:prepare && cd android && ./gradlew assembleDebug",
+        "android:apk:release": "npm run android:prepare && cd android && ./gradlew assembleRelease",
+        "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+        "electron:build": "npm run build && electron-builder"
+    },
+    "build": {
+        "appId": "com.kamille.events",
+        "productName": "Kamille Events Manager",
+        "directories": {
+            "output": "dist-electron"
+        },
+        "files": [
+            "public/**/*",
+            "electron/**/*"
+        ],
+        "linux": {
+            "target": [
+                "AppImage"
+            ]
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ]
+        },
+        "mac": {
+            "target": [
+                "dmg"
+            ]
+        }
+    },
+    "dependencies": {
+        "@capacitor/android": "^8.3.4",
+        "@capacitor/cli": "^7.6.5",
+        "@capacitor/core": "^8.3.4",
+        "axios": "^1.16.1",
+        "pinia": "^3.0.4",
+        "vue": "^3.5.35",
+        "vue-router": "^4.6.4"
+    }
+}

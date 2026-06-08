@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titreDocument }} n°{{ numero }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 11px;
+            color: #2c2416;
+            margin: 0;
+            padding: 24px;
+        }
+        .entete {
+            border-bottom: 2px solid #cca761;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+        .entete h1 {
+            margin: 0 0 4px;
+            font-size: 22px;
+            color: #2c2416;
+        }
+        .entete .meta {
+            color: #6b6358;
+            font-size: 10px;
+        }
+        .section {
+            margin-bottom: 16px;
+        }
+        .section h2 {
+            margin: 0 0 8px;
+            font-size: 13px;
+            color: #cca761;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .grille-2 {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .grille-2 td {
+            width: 50%;
+            vertical-align: top;
+            padding: 2px 8px 2px 0;
+        }
+        .label {
+            color: #6b6358;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .valeur {
+            margin-top: 2px;
+        }
+        table.kits {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+        }
+        table.kits th,
+        table.kits td {
+            border: 1px solid #ddd5c8;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        table.kits th {
+            background: #f7f3eb;
+            font-size: 10px;
+        }
+        .recap {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+        }
+        .recap td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #eee8dc;
+        }
+        .recap td:last-child {
+            text-align: right;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .recap tr.total td {
+            border-top: 2px solid #cca761;
+            border-bottom: none;
+            font-size: 13px;
+            padding-top: 8px;
+        }
+        .conditions li {
+            margin-bottom: 4px;
+        }
+        .note {
+            white-space: pre-wrap;
+            background: #f7f3eb;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .oui-non {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="entete">
+        <h1>{{ titreDocument }} n°{{ numero }}</h1>
+        <div class="meta">Kamille Events — Créé le {{ createdAt|date('d/m/Y à H:i') }}</div>
+    </div>
+
+    {% if clients is not empty %}
+        <div class="section">
+            <h2>Client{% if clients|length > 1 %}s{% endif %}</h2>
+            {% for client in clients %}
+                <table class="grille-2">
+                    <tr>
+                        <td>
+                            <div class="label">Nom</div>
+                            <div class="valeur">{{ client.nom }} {{ client.prenom }}</div>
+                        </td>
+                        <td>
+                            <div class="label">Téléphone</div>
+                            <div class="valeur">{{ client.telephone|default('—') }}</div>
+                        </td>
+                    </tr>
+                    {% if client.adresse %}
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Adresse</div>
+                                <div class="valeur">{{ client.adresse }}</div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+                {% if not loop.last %}<br>{% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="section">
+        <h2>Événement</h2>
+        <table class="grille-2">
+            <tr>
+                <td>
+                    <div class="label">Adresse de l'événement</div>
+                    <div class="valeur">{{ adresseEvenement|default('—') }}</div>
+                </td>
+                <td>
+                    <div class="label">Date de réservation</div>
+                    <div class="valeur">{{ dateReservation ? dateReservation|date('d/m/Y') : '—' }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {% if lignesKits is not empty %}
+        <div class="section">
+            <h2>Kits sélectionnés</h2>
+            <table class="kits">
+                <thead>
+                    <tr>
+                        <th>Kit</th>
+                        <th>Quantité</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in lignesKits %}
+                        <tr>
+                            <td>{{ ligne.nom }}</td>
+                            <td>{{ ligne.quantite }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    <div class="section">
+        <h2>Options</h2>
+        <table class="grille-2">
+            <tr>
+                <td>
+                    <div class="label">Chandeliers</div>
+                    <div class="valeur">
+                        {% if chandeliers %}
+                            Oui ({{ quantiteChandeliers }})
+                        {% else %}
+                            Non
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <div class="label">Flûtes / verres</div>
+                    <div class="valeur">
+                        {% if flutesVerresOption %}
+                            {{ flutesVerresOption }} ({{ quantiteFlutesVerres }})
+                        {% else %}
+                            Non
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="label">Livraison</div>
+                    <div class="valeur">
+                        {% if livraison %}
+                            Oui — {{ villeNom }} ({{ villeDepartement }}) — {{ villeKilometres }} km
+                        {% else %}
+                            Non
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <div class="label">Vaisselle à nettoyer</div>
+                    <div class="valeur">
+                        {% if vaisselleANettoyer %}
+                            Oui — rentrée le {{ dateRentree|date('d/m/Y') }}
+                        {% else %}
+                            Non — rentrée le {{ dateRentree|date('d/m/Y') }}
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>{{ type == 'devis' ? 'Récapitulatif devis' : 'Récapitulatif facture' }}</h2>
+        <table class="recap">
+            <tr>
+                <td>Kits</td>
+                <td>{{ prixKits }} €</td>
+            </tr>
+            <tr>
+                <td>Livraison</td>
+                <td>{{ prixLivraison }} €</td>
+            </tr>
+            <tr>
+                <td>Lavage</td>
+                <td>{{ prixLavage }} €</td>
+            </tr>
+            {% if avecArrhes %}
+                <tr>
+                    <td>Caution</td>
+                    <td>{{ prixCaution }} €</td>
+                </tr>
+                <tr>
+                    <td>Arrhes</td>
+                    <td>{{ prixArrhes }} €</td>
+                </tr>
+            {% endif %}
+            <tr class="total">
+                <td>Prix final</td>
+                <td>{{ prixFinal }} €</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if noteCommande %}
+        <div class="section">
+            <h2>Notes de commande</h2>
+            <div class="note">{{ noteCommande }}</div>
+        </div>
+    {% endif %}
+
+    <div class="section">
+        <h2>Conditions de vente</h2>
+        <ul class="conditions">
+            <li><span class="oui-non">{{ conditionCasse ? '✓' : '✗' }}</span> Toute casse ou perte sera facturée</li>
+            <li><span class="oui-non">{{ conditionCaution ? '✓' : '✗' }}</span> La caution sera restituée après vérification du matériel</li>
+            <li><span class="oui-non">{{ conditionReservation ? '✓' : '✗' }}</span> La réservation est validée après arrhes</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Validation</h2>
+        <p><span class="oui-non">{{ bonPourAccord ? '✓ Bon pour accord' : '✗ Non signé' }}</span></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,449 @@
+@use 'variables' as *;
+@use 'animations';
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+// Tailles de la maquette (mobile) : 25 / 15 / 10 px,
+// agrandies en tablette puis en ordinateur.
+:root {
+  --fs-grand: 25px;
+  --fs-base: 15px;
+  --fs-petit: 10px;
+
+  // Boutons : maquette = 40px de haut, ~334px de large (centrés)
+  --btn-h: 40px;
+  --btn-max: 334px;
+}
+
+@media (min-width: $bp-tablet) {
+  :root {
+    --fs-grand: 30px;
+    --fs-base: 17px;
+    --fs-petit: 12px;
+
+    --btn-h: 44px;
+    --btn-max: 360px;
+  }
+}
+
+@media (min-width: $bp-desktop) {
+  :root {
+    --fs-grand: 34px;
+    --fs-base: 18px;
+    --fs-petit: 12px;
+
+    --btn-h: 48px;
+    --btn-max: 480px;
+  }
+}
+
+@media (min-width: $bp-wide) {
+  :root {
+    --btn-max: 520px;
+  }
+}
+
+body {
+  font-family: $font-base;
+  font-size: var(--fs-base);
+  color: $color-text;
+  background: $color-bg;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+#app {
+  min-height: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+// Contenu : mobile = maquette 402 px ; plus large sur tablette / PC
+.content {
+  width: 100%;
+  max-width: $maquette-width;
+  margin: 0 auto;
+  padding: $space-lg $space-side $space-xl;
+}
+
+@media (min-width: $bp-tablet) {
+  .content {
+    max-width: $content-max-tablet;
+    padding: $space-xl $space-side-tablet;
+  }
+
+  .form-grille,
+  .recap-grille {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-md;
+  }
+
+  .kits {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: $bp-desktop) {
+  .content {
+    max-width: $content-max-desktop;
+    padding: $space-xl $space-side-desktop;
+  }
+
+  .kits {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: $space-xl;
+  }
+}
+
+@media (min-width: $bp-wide) {
+  .content {
+    max-width: $content-max-wide;
+    padding: 40px $space-side-wide;
+  }
+}
+
+.page-titre {
+  font-size: var(--fs-grand);
+  font-weight: 400;
+  margin-bottom: $space-md;
+  line-height: 1.2;
+}
+
+.page-sous-titre {
+  font-size: var(--fs-base);
+  font-weight: 400;
+  color: $color-text;
+  margin-bottom: $space-lg;
+  line-height: 1.35;
+}
+
+.section-titre {
+  font-size: var(--fs-base);
+  font-weight: 400;
+  margin-bottom: $space-md;
+}
+
+// Formulaires (Devis, Facture, Secrétaire)
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-xl;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+
+  &__annuler {
+    text-align: center;
+    text-decoration: none;
+  }
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: $space-md;
+
+  &__titre {
+    font-size: var(--fs-base);
+    font-weight: 400;
+    padding-bottom: $space-xs;
+    border-bottom: 1px solid $color-gold;
+  }
+
+  &__sous-titre {
+    font-size: var(--fs-base);
+    font-weight: 400;
+    margin-top: $space-sm;
+  }
+}
+
+.obligatoire {
+  color: $color-error;
+  margin-left: 2px;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: $space-xs;
+  font-size: var(--fs-base);
+  min-width: 0;
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    max-width: 100%;
+    font-family: inherit;
+    font-size: var(--fs-base);
+    padding: $space-sm;
+    border: 1px solid $color-border;
+    border-radius: $radius;
+    background: $color-bg;
+    color: $color-text;
+    transition:
+      border-color $transition,
+      box-shadow $transition,
+      transform $transition;
+
+    &:focus {
+      outline: none;
+      border-color: $color-gold;
+      box-shadow: 0 0 0 3px $color-gold-ghost;
+      transform: translateY(-1px);
+    }
+
+    &[readonly] {
+      background: rgba(217, 217, 217, 0.35);
+      cursor: default;
+    }
+  }
+
+  textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+}
+
+.champ__erreur {
+  color: $color-error;
+  font-size: var(--fs-petit);
+}
+
+.message {
+  font-size: var(--fs-base);
+  padding: $space-sm $space-md;
+  border-radius: $radius;
+  border: 1px solid;
+  animation: scale-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &--succes {
+    color: $color-success;
+    border-color: $color-success;
+    background: rgba(46, 125, 50, 0.08);
+  }
+
+  &--erreur {
+    color: $color-error;
+    border-color: $color-error;
+    background: rgba(192, 57, 43, 0.08);
+  }
+
+  &--info {
+    color: $color-text;
+    border-color: rgba(204, 167, 97, 0.55);
+    background: rgba(204, 167, 97, 0.12);
+  }
+}
+
+.champ-inline {
+  display: flex;
+  align-items: center;
+  gap: $space-sm;
+  font-size: var(--fs-base);
+  cursor: pointer;
+  transition: color $transition;
+
+  &:hover {
+    color: $color-gold-dark;
+  }
+
+  input {
+    accent-color: $color-gold;
+    cursor: pointer;
+  }
+}
+
+.bouton {
+  border: 0;
+  border-radius: $radius;
+  background: $color-gold;
+  color: $color-text;
+  font-weight: 400;
+  height: var(--btn-h);
+  padding: 0 $space-lg;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color $transition,
+    transform $transition,
+    box-shadow $transition;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.55s ease;
+  }
+
+  &:hover {
+    background: $color-gold-dark;
+    box-shadow: $shadow-lift;
+    transform: translateY(-2px);
+
+    &::after {
+      transform: translateX(120%);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+.bouton--bloc {
+  display: flex;
+  width: 100%;
+  max-width: var(--btn-max);
+  margin-inline: auto;
+}
+
+.bouton--secondaire {
+  background: transparent;
+  border: 1px solid $color-gold;
+
+  &:hover {
+    background: $color-gold;
+    box-shadow: $shadow-soft;
+  }
+}
+
+// Grille des kits de vaisselle (Devis, Facture) — 2 colonnes comme la maquette
+.kits {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: $space-lg;
+  column-gap: $space-lg;
+}
+
+.kit {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+
+  &__nom {
+    font-weight: 400;
+  }
+
+  &__photo-label {
+    font-size: var(--fs-base);
+    color: $color-text;
+  }
+
+  &__photo {
+    width: 100%;
+    aspect-ratio: 153 / 150;
+    background: $color-placeholder;
+    border-radius: $radius;
+    border: 1px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+      border-color $transition,
+      box-shadow $transition,
+      transform $transition;
+
+    &:hover {
+      transform: scale(1.02);
+      box-shadow: $shadow-soft;
+    }
+
+    &--actif {
+      border-color: $color-gold;
+      box-shadow: 0 0 0 3px $color-gold-ghost;
+      transform: scale(1.01);
+    }
+  }
+
+  &__photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+
+    .kit__photo:hover & {
+      transform: scale(1.06);
+    }
+  }
+}
+
+// Choix Oui / Non alignés à la suite
+.choix-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-lg;
+}
+
+// Transition de page — voir _animations.scss (.page-slide-*)
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// Accessibilité : on coupe les animations si l'utilisateur le demande
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

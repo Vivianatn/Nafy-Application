@@ -1,0 +1,173 @@
+<template>
+  <div class="connexion">
+    <Transition name="connexion-carte" appear>
+      <div class="connexion__carte">
+        <header class="connexion__entete">
+          <p class="connexion__marque">Kamille Events</p>
+          <h1 class="connexion__titre">Mot de passe oublié</h1>
+          <p class="connexion__sous-titre">
+            Indiquez votre email ou téléphone. Un lien vous sera envoyé si un compte existe.
+          </p>
+        </header>
+
+        <form class="connexion__form" @submit.prevent="envoyer">
+          <p v-if="messageSucces" class="connexion__message connexion__message--succes">{{ messageSucces }}</p>
+          <p v-if="messageErreur" class="connexion__message connexion__message--erreur">{{ messageErreur }}</p>
+
+          <label class="champ">
+            Email ou numéro de téléphone
+            <input
+              type="text"
+              v-model.trim="identifiant"
+              autocomplete="username"
+              placeholder="ex. marie@exemple.fr ou 0612345678"
+            />
+            <span v-if="erreurs.identifiant" class="champ__erreur">{{ erreurs.identifiant }}</span>
+          </label>
+
+          <button type="submit" class="bouton bouton--bloc" :disabled="envoiEnCours">
+            {{ envoiEnCours ? 'Envoi…' : 'Recevoir le lien' }}
+          </button>
+
+          <router-link :to="{ name: 'connexion' }" class="connexion__lien">Retour à la connexion</router-link>
+        </form>
+      </div>
+    </Transition>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import api from '../api'
+
+const identifiant = ref('')
+const erreurs = ref({})
+const messageErreur = ref('')
+const messageSucces = ref('')
+const envoiEnCours = ref(false)
+
+async function envoyer() {
+  erreurs.value = {}
+  messageErreur.value = ''
+  messageSucces.value = ''
+  envoiEnCours.value = true
+
+  try {
+    const { data } = await api.post('/auth/mot-de-passe-oublie', { identifiant: identifiant.value })
+    messageSucces.value = data.message
+    identifiant.value = ''
+  } catch (error) {
+    if (error.response?.status === 422) {
+      erreurs.value = error.response.data.erreurs ?? {}
+      messageErreur.value = 'Veuillez corriger le champ indiqué.'
+    } else {
+      messageErreur.value = 'Impossible d’envoyer la demande. Réessayez plus tard.'
+    }
+  } finally {
+    envoiEnCours.value = false
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+@use '../../styles/variables' as *;
+
+.connexion {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-lg $space-side;
+
+  &__carte {
+    width: 100%;
+    max-width: 420px;
+    border: 1px solid rgba(204, 167, 97, 0.35);
+    border-radius: calc($radius + 4px);
+    overflow: hidden;
+    background: $color-bg;
+    box-shadow: $shadow-soft;
+  }
+
+  &__entete {
+    padding: $space-lg $space-lg $space-md;
+    background: linear-gradient(180deg, rgba(204, 167, 97, 0.28) 0%, rgba(204, 167, 97, 0.08) 100%);
+    border-bottom: 1px solid rgba(204, 167, 97, 0.25);
+    text-align: center;
+  }
+
+  &__marque {
+    font-size: var(--fs-petit);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: $color-muted;
+    margin-bottom: $space-xs;
+  }
+
+  &__titre {
+    font-size: var(--fs-grand);
+    margin-bottom: $space-xs;
+  }
+
+  &__sous-titre {
+    color: $color-muted;
+    font-size: var(--fs-petit);
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+    padding: $space-lg;
+  }
+
+  &__lien {
+    text-align: center;
+    color: $color-muted;
+    font-size: var(--fs-petit);
+    transition: color $transition;
+
+    &:hover {
+      color: $color-gold-dark;
+    }
+  }
+
+  &__message {
+    padding: $space-sm $space-md;
+    border-radius: $radius;
+    font-size: var(--fs-petit);
+
+    &--erreur {
+      background: rgba(192, 57, 43, 0.1);
+      color: $color-error;
+      border: 1px solid rgba(192, 57, 43, 0.25);
+    }
+
+    &--succes {
+      background: rgba(46, 125, 50, 0.1);
+      color: $color-success;
+      border: 1px solid rgba(46, 125, 50, 0.25);
+    }
+  }
+}
+
+.connexion-carte-enter-active {
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.connexion-carte-enter-from {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connexion-carte-enter-active {
+    transition: opacity 0.2s ease;
+  }
+
+  .connexion-carte-enter-from {
+    transform: none;
+  }
+}
+</style>

@@ -1,0 +1,210 @@
+@use 'variables' as *;
+
+$ease-out-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+$ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+$duration-fast: 0.18s;
+$duration-normal: 0.32s;
+$duration-slow: 0.48s;
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+
+// Conteneur : les enfants directs apparaissent en cascade
+.anim-page {
+  > .page-titre,
+  > .page-sous-titre,
+  > .section-titre,
+  > .bloc,
+  > .form,
+  > .calendrier,
+  > .grille,
+  > .filtre-date,
+  > .inventaire__etat,
+  > .bouton,
+  > a.bouton {
+    animation: fade-up $duration-normal $ease-out-smooth backwards;
+  }
+
+  > .page-titre { animation-delay: 0.04s; }
+  > .page-sous-titre { animation-delay: 0.08s; }
+  > .section-titre { animation-delay: 0.1s; }
+  > .bloc:nth-child(n) { animation-delay: calc(0.06s + var(--i, 0) * 0.06s); }
+  > .form { animation-delay: 0.08s; }
+  > .grille { animation-delay: 0.12s; }
+}
+
+.bloc {
+  --i: 0;
+
+  &:nth-of-type(2) { --i: 1; }
+  &:nth-of-type(3) { --i: 2; }
+  &:nth-of-type(4) { --i: 3; }
+}
+
+// Listes dynamiques : décalage par rang
+.anim-list > * {
+  animation: fade-up $duration-normal $ease-out-smooth backwards;
+
+  @for $i from 1 through 24 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{0.04 + $i * 0.05}s;
+    }
+  }
+}
+
+// Grille de cartes
+.anim-grid > * {
+  animation: fade-up $duration-normal $ease-out-smooth backwards;
+  transition: transform $duration-fast $ease-out-smooth, box-shadow $duration-fast ease;
+
+  @for $i from 1 through 12 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{0.06 + $i * 0.05}s;
+    }
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-soft;
+  }
+}
+
+// Sections de formulaire en cascade
+.anim-form .form-section {
+  animation: fade-up $duration-normal $ease-out-smooth backwards;
+
+  @for $i from 1 through 16 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{0.04 + $i * 0.04}s;
+    }
+  }
+}
+
+// Chargement skeleton
+.anim-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(217, 217, 217, 0.35) 25%,
+    rgba(217, 217, 217, 0.55) 50%,
+    rgba(217, 217, 217, 0.35) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid $color-gold-ghost;
+  border-top-color: $color-gold;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+// Transitions Vue — navigation
+.page-slide-enter-active,
+.page-slide-leave-active {
+  transition:
+    opacity $duration-normal ease,
+    transform $duration-normal $ease-out-smooth;
+}
+
+.page-slide-enter-from {
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+}
+
+.page-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.99);
+}
+
+// Popup notification
+.popup-fade-enter-active,
+.popup-fade-leave-active {
+  transition: opacity $duration-fast ease;
+}
+
+.popup-fade-enter-active .popup,
+.popup-fade-leave-active .popup {
+  transition: transform $duration-normal $ease-spring, opacity $duration-normal ease;
+}
+
+.popup-fade-enter-from,
+.popup-fade-leave-to {
+  opacity: 0;
+}
+
+.popup-fade-enter-from .popup,
+.popup-fade-leave-to .popup {
+  opacity: 0;
+  transform: scale(0.88) translateY(12px);
+}
+
+// Overlay menu
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity $duration-fast ease;
+}
+
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
