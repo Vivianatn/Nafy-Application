@@ -48,7 +48,7 @@ onMounted(verifierSession)
   color: $color-muted;
   text-align: center;
   padding: $space-xl;
-  animation: fade-in 0.4s ease;
+  animation: fade-in 0.55s ease-out;
 
   .spinner {
     margin: 0 auto;

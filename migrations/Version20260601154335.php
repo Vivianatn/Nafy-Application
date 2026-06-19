@@ -19,9 +19,9 @@ final class Version20260601154335 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE ville ADD departement VARCHAR(3) NOT NULL');
-        $this->addSql('CREATE UNIQUE INDEX uniq_ville_nom_departement ON ville (nom, departement)');
+        $this->addSql("ALTER TABLE ville ADD COLUMN IF NOT EXISTS departement VARCHAR(3) NOT NULL DEFAULT '77'");
+        $this->addSql('ALTER TABLE ville MODIFY departement VARCHAR(3) NOT NULL');
+        $this->addSql('CREATE UNIQUE INDEX IF NOT EXISTS uniq_ville_nom_departement ON ville (nom, departement)');
     }
 
     public function down(Schema $schema): void

@@ -58,6 +58,29 @@ class DevisRepository extends ServiceEntityRepository
     /**
      * @return list<Devis>
      */
+    public function findAllWithLignesKitsAffectantDate(\DateTimeImmutable $date): array
+    {
+        $dateVeille = $date->modify('-1 day');
+
+        return $this->createQueryBuilder('d')
+            ->leftJoin('d.lignesKits', 'dk')->addSelect('dk')
+            ->leftJoin('dk.kit', 'k')->addSelect('k')
+            ->where('d.dateReservation IS NOT NULL')
+            ->andWhere('d.dateReservation <= :date')
+            ->andWhere('(
+                (d.vaisselleANettoyer = true AND d.dateRentree IS NOT NULL AND d.dateRentree >= :dateVeille)
+                OR (d.vaisselleANettoyer = false AND d.dateRentree IS NOT NULL AND d.dateRentree >= :date)
+                OR (d.dateRentree IS NULL AND d.dateReservation >= :date)
+            )')
+            ->setParameter('date', $date)
+            ->setParameter('dateVeille', $dateVeille)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Devis>
+     */
     public function findAllWithLignesKits(): array
     {
         return $this->createQueryBuilder('d')

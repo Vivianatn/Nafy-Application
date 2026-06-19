@@ -395,14 +395,13 @@ img {
       transform $transition;
 
     &:hover {
-      transform: scale(1.02);
+      transform: scale(1.01);
       box-shadow: $shadow-soft;
     }
 
     &--actif {
       border-color: $color-gold;
       box-shadow: 0 0 0 3px $color-gold-ghost;
-      transform: scale(1.01);
     }
   }
 
@@ -411,10 +410,10 @@ img {
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
 
     .kit__photo:hover & {
-      transform: scale(1.06);
+      transform: scale(1.03);
     }
   }
 }

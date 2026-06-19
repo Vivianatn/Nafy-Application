@@ -223,7 +223,7 @@ async function envoyer() {
     padding: $space-sm $space-md;
     border-radius: $radius;
     font-size: var(--fs-petit);
-    animation: scale-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: scale-in 0.45s cubic-bezier(0.33, 1, 0.68, 1);
 
     &--erreur {
       background: rgba(192, 57, 43, 0.1);
@@ -235,18 +235,18 @@ async function envoyer() {
 
 .connexion-carte-enter-active {
   transition:
-    opacity 0.45s ease,
-    transform 0.45s ease;
+    opacity 0.5s ease-out,
+    transform 0.5s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .connexion-carte-enter-from {
   opacity: 0;
-  transform: translateY(18px) scale(0.98);
+  transform: translateY(8px);
 }
 
 @keyframes connexion-flotte {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(12px); }
+  50% { transform: translateY(6px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

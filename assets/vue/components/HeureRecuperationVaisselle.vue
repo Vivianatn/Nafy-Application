@@ -1,6 +1,8 @@
 <template>
-  <div class="heure-recup" :class="{ 'heure-recup--active': Boolean(heure) }">
+  <div class="heure-recup" :class="{ 'heure-recup--active': Boolean(heureAffichee) }">
     <p class="heure-recup__libelle">Heure de récupération de vaisselle</p>
+
+    <p v-if="messageErreur" class="heure-recup__erreur">{{ messageErreur }}</p>
 
     <p class="heure-recup__apercu" :class="{ 'heure-recup__apercu--vide': !apercu }">
       {{ apercu || '—' }}
@@ -17,6 +19,7 @@
           :value="champHeure"
           placeholder="00"
           aria-label="Heures (0 à 23)"
+          :disabled="enregistrementEnCours"
           @input="saisirHeure"
           @blur="validerSaisie"
         />
@@ -34,6 +37,7 @@
           :value="champMinute"
           placeholder="00"
           aria-label="Minutes (0 à 59)"
+          :disabled="enregistrementEnCours"
           @input="saisirMinute"
           @blur="validerSaisie"
         />
@@ -41,12 +45,13 @@
     </div>
 
     <button
-      v-if="heure"
+      v-if="heureAffichee"
       type="button"
       class="heure-recup__effacer"
+      :disabled="enregistrementEnCours"
       @click="effacer"
     >
-      Effacer l'heure
+      {{ enregistrementEnCours ? 'Enregistrement…' : 'Effacer l\'heure' }}
     </button>
   </div>
 </template>
@@ -60,26 +65,34 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  heureInitiale: {
+    type: String,
+    default: '',
+  },
 })
 
-const { getHeure, setHeure, formaterHeure } = useHeuresRecuperation()
+const emit = defineEmits(['heure-change'])
+
+const { enregistrerHeure, formaterHeure } = useHeuresRecuperation()
 
 const champHeure = ref('')
 const champMinute = ref('')
-
-const heure = computed(() => getHeure(props.devisId))
+const heureAffichee = ref('')
+const enregistrementEnCours = ref(false)
+const messageErreur = ref('')
 
 const apercu = computed(() => {
   if (champHeure.value !== '' && champMinute.value !== '') {
     return formaterHeure(`${normaliser(champHeure.value, 23)}:${normaliser(champMinute.value, 59)}`)
   }
 
-  return heure.value ? formaterHeure(heure.value) : ''
+  return heureAffichee.value ? formaterHeure(heureAffichee.value) : ''
 })
 
 watch(
-  heure,
+  () => props.heureInitiale,
   (valeur) => {
+    heureAffichee.value = valeur || ''
     if (!valeur) {
       champHeure.value = ''
       champMinute.value = ''
@@ -110,9 +123,24 @@ function saisirMinute(event) {
   champMinute.value = chiffresUniquement(event.target.value)
 }
 
-function validerSaisie() {
+async function persister(heure) {
+  enregistrementEnCours.value = true
+  messageErreur.value = ''
+
+  try {
+    const enregistree = await enregistrerHeure(props.devisId, heure)
+    heureAffichee.value = enregistree
+    emit('heure-change', { devisId: props.devisId, heure: enregistree })
+  } catch {
+    messageErreur.value = 'Impossible d\'enregistrer l\'heure.'
+  } finally {
+    enregistrementEnCours.value = false
+  }
+}
+
+async function validerSaisie() {
   if (champHeure.value === '' && champMinute.value === '') {
-    setHeure(props.devisId, '')
+    await persister('')
     return
   }
 
@@ -121,13 +149,13 @@ function validerSaisie() {
 
   champHeure.value = h
   champMinute.value = m
-  setHeure(props.devisId, `${h}:${m}`)
+  await persister(`${h}:${m}`)
 }
 
-function effacer() {
+async function effacer() {
   champHeure.value = ''
   champMinute.value = ''
-  setHeure(props.devisId, '')
+  await persister('')
 }
 </script>
 
@@ -152,6 +180,12 @@ function effacer() {
   &__libelle {
     font-size: var(--fs-petit);
     color: $color-muted;
+    margin-bottom: $space-xs;
+  }
+
+  &__erreur {
+    font-size: var(--fs-petit);
+    color: #b42318;
     margin-bottom: $space-xs;
   }
 
@@ -213,7 +247,7 @@ function effacer() {
       color: rgba(107, 107, 107, 0.45);
     }
 
-    &:hover {
+    &:hover:not(:disabled) {
       border-color: $color-gold;
       background-color: rgba(204, 167, 97, 0.06);
     }
@@ -223,6 +257,10 @@ function effacer() {
       border-color: $color-gold;
       box-shadow: 0 0 0 3px $color-gold-ghost;
       transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.7;
     }
   }
 
@@ -248,8 +286,13 @@ function effacer() {
     cursor: pointer;
     transition: color $transition;
 
-    &:hover {
+    &:hover:not(:disabled) {
       color: $color-text;
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: wait;
     }
   }
 }

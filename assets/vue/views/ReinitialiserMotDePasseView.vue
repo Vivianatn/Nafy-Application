@@ -171,11 +171,11 @@ async function envoyer() {
 }
 
 .connexion-carte-enter-active {
-  transition: opacity 0.45s ease, transform 0.45s ease;
+  transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .connexion-carte-enter-from {
   opacity: 0;
-  transform: translateY(18px);
+  transform: translateY(8px);
 }
 </style>

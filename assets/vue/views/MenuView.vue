@@ -25,8 +25,10 @@
   <nav class="drawer" :class="{ 'drawer--open': ouvert }">
     <ul>
       <li><router-link :to="{ name: 'inventaire' }" @click="fermer">Inventaire</router-link></li>
+      <li><router-link :to="{ name: 'evenements' }" @click="fermer">Événements</router-link></li>
       <li><router-link :to="{ name: 'devis' }" @click="fermer">Devis</router-link></li>
       <li><router-link :to="{ name: 'facture' }" @click="fermer">Facturation</router-link></li>
+      <li v-if="estResponsable()"><router-link :to="{ name: 'secretaires' }" @click="fermer">Secrétaires</router-link></li>
       <li v-if="estResponsable()"><router-link :to="{ name: 'ajouter-secretaire' }" @click="fermer">+ Secrétaire</router-link></li>
       <li v-if="estResponsable()" class="drawer__extra"><router-link :to="{ name: 'ajouter-responsable' }" @click="fermer">+ Responsable</router-link></li>
       <li class="drawer__extra"><router-link :to="{ name: 'home' }" @click="fermer">Accueil</router-link></li>
@@ -95,10 +97,10 @@ async function seDeconnecter() {
   border: 0;
   padding: 0;
   position: relative;
-  transition: transform $transition-bounce;
+  transition: transform $transition;
 
   &:hover {
-    transform: scale(1.08);
+    transform: scale(1.03);
   }
 
   span {
@@ -107,7 +109,7 @@ async function seDeconnecter() {
     width: 100%;
     height: 2px;
     background: $color-text;
-    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+    transition: transform 0.38s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.32s ease-out;
 
     &:nth-child(1) { top: 0; }
     &:nth-child(2) { top: 8px; }
@@ -137,7 +139,7 @@ async function seDeconnecter() {
   width: $drawer-width;
   background: $color-gold-soft;
   transform: translateX(100%);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.42s cubic-bezier(0.33, 1, 0.68, 1);
   z-index: 25;
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
 
@@ -145,11 +147,11 @@ async function seDeconnecter() {
     transform: translateX(0);
 
     li {
-      animation: slide-in-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+      animation: slide-in-right 0.45s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 
-      @for $i from 1 through 8 {
+      @for $i from 1 through 9 {
         &:nth-child(#{$i}) {
-          animation-delay: #{0.05 + $i * 0.045}s;
+          animation-delay: #{0.03 + $i * 0.03}s;
         }
       }
     }

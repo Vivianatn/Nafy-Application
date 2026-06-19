@@ -81,7 +81,7 @@ async function envoyer() {
     const secretaire = reponse.data
     reinitialiser()
     notifier(`La secrétaire « ${secretaire.prenom} ${secretaire.nom} » a bien été ajoutée.`, 'succes')
-    router.push({ name: 'home' })
+    router.push({ name: 'secretaires' })
   } catch (error) {
     if (error.response?.status === 422) {
       erreurs.value = error.response.data.erreurs ?? {}

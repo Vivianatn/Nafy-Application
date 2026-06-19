@@ -32,14 +32,21 @@
         "dev-server": "encore dev-server",
         "dev": "encore dev",
         "watch": "encore dev --watch",
+        "db:setup": "bash scripts/setup-database.sh",
+        "db:check": "bash scripts/check-local.sh",
         "build": "encore production --progress",
         "cap:sync": "npx cap sync android",
         "cap:open": "npx cap open android",
         "android:prepare": "npm run build && npx cap sync android",
         "android:apk": "npm run android:prepare && cd android && ./gradlew assembleDebug",
         "android:apk:release": "npm run android:prepare && cd android && ./gradlew assembleRelease",
-        "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-        "electron:build": "npm run build && electron-builder"
+        "electron:dev": "electron .",
+        "electron:build": "electron-builder",
+        "electron:build:win": "electron-builder --win nsis",
+        "electron:build:win:dir": "electron-builder --win dir",
+        "electron:build:linux": "electron-builder --linux AppImage",
+        "desktop:build": "bash scripts/build-desktop.sh win",
+        "desktop:installer": "electron-builder --win nsis"
     },
     "build": {
         "appId": "com.kamille.events",
@@ -48,23 +55,42 @@
             "output": "dist-electron"
         },
         "files": [
-            "public/**/*",
-            "electron/**/*"
+            "electron/**/*",
+            "package.json"
+        ],
+        "extraResources": [
+            {
+                "from": "electron/default-config.json",
+                "to": "default-config.json"
+            }
         ],
         "linux": {
             "target": [
                 "AppImage"
-            ]
+            ],
+            "category": "Office"
         },
         "win": {
             "target": [
-                "nsis"
-            ]
+                "nsis",
+                "dir"
+            ],
+            "signAndEditExecutable": false
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "installerLanguages": [
+                "fr_FR",
+                "en_US"
+            ],
+            "language": "1036"
         },
         "mac": {
             "target": [
                 "dmg"
-            ]
+            ],
+            "category": "public.app-category.business"
         }
     },
     "dependencies": {

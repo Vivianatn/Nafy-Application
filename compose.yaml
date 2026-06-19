@@ -1,3 +1,5 @@
+# Ce projet utilise la stack Docker MMI dans /buts4/docker-compose.yml
+# (symfony-web + symfony-db MariaDB). Ne pas lancer « docker compose » ici.
 
 services:
 ###> doctrine/doctrine-bundle ###

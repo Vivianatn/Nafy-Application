@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Kamille Events Manager</title>
+  <style>
+    body { font-family: Segoe UI, sans-serif; background: #1a1a2e; color: #eee; padding: 2rem; max-width: 720px; margin: 0 auto; }
+    h1 { color: #e94560; }
+    code { background: #16213e; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+    ol, ul { line-height: 1.8; }
+    button { background: #e94560; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 1rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Serveur inaccessible</h1>
+  <p>L'application bureau a besoin du serveur Symfony (Docker) sur le port <strong>8319</strong>.</p>
+  <p>URLs testees :</p>
+  <ul id="urls"></ul>
+  <ol>
+    <li>Demarrez Docker : <code>cd /buts4 && docker compose up -d</code></li>
+    <li>Verifiez : http://symfony.mmi-troyes.fr:8319 ou http://127.0.0.1:8319</li>
+    <li>Modifiez si besoin : <code id="config-path"></code></li>
+  </ol>
+  <button id="retry">Reessayer</button>
+  <script>
+    const params = new URLSearchParams(window.location.search)
+    const urls = (params.get('urls') || '').split('|').filter(Boolean)
+    const configPath = params.get('config') || ''
+
+    document.getElementById('urls').innerHTML = urls.map((url) => `<li><code>${url}</code></li>`).join('')
+    document.getElementById('config-path').textContent = configPath
+
+    document.getElementById('retry').onclick = () => {
+      if (window.electronAPI && window.electronAPI.reessayerConnexion) {
+        window.electronAPI.reessayerConnexion()
+      } else {
+        location.reload()
+      }
+    }
+  </script>
+</body>
+</html>

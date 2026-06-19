@@ -15,6 +15,29 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_RESPONSABLE')]
 class SecretaireController extends AbstractController
 {
+    #[Route('/api/secretaires', name: 'api_secretaire_list', methods: ['GET'])]
+    public function list(SecretaireRepository $secretaireRepository): JsonResponse
+    {
+        $secretaires = $secretaireRepository->findBy([], ['nom' => 'ASC', 'prenom' => 'ASC']);
+
+        return $this->json(array_map(
+            fn (Secretaire $secretaire) => $this->serialiserSecretaire($secretaire),
+            $secretaires,
+        ));
+    }
+
+    #[Route('/api/secretaires/{id}', name: 'api_secretaire_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function show(int $id, SecretaireRepository $secretaireRepository): JsonResponse
+    {
+        $secretaire = $secretaireRepository->find($id);
+
+        if ($secretaire === null) {
+            return $this->json(['message' => 'Secrétaire introuvable.'], 404);
+        }
+
+        return $this->json($this->serialiserSecretaire($secretaire));
+    }
+
     #[Route('/api/secretaires', name: 'api_secretaire_create', methods: ['POST'])]
     public function create(
         Request $request,
@@ -74,12 +97,20 @@ class SecretaireController extends AbstractController
         $entityManager->persist($secretaire);
         $entityManager->flush();
 
-        return $this->json([
+        return $this->json($this->serialiserSecretaire($secretaire), 201);
+    }
+
+    /**
+     * @return array{id: int|null, nom: string|null, prenom: string|null, email: string|null, telephone: string|null}
+     */
+    private function serialiserSecretaire(Secretaire $secretaire): array
+    {
+        return [
             'id' => $secretaire->getId(),
             'nom' => $secretaire->getNom(),
             'prenom' => $secretaire->getPrenom(),
             'email' => $secretaire->getEmail(),
             'telephone' => $secretaire->getTelephone(),
-        ], 201);
+        ];
     }
 }

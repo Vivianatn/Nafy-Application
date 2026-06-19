@@ -1,0 +1,7 @@
+{
+  "backendUrl": "http://symfony.mmi-troyes.fr:8319",
+  "backendUrlsFallback": [
+    "http://127.0.0.1:8319",
+    "http://localhost:8319"
+  ]
+}

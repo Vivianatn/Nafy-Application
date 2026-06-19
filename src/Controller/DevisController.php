@@ -25,6 +25,9 @@ class DevisController extends AbstractController
                 'numero' => $item->getNumero(),
                 'createdAt' => $item->getCreatedAt()->format(\DateTimeInterface::ATOM),
                 'dateReservation' => $item->getDateReservation()?->format('Y-m-d'),
+                'heureRecuperationVaisselle' => $item->getHeureRecuperationVaisselle()?->format('H:i'),
+                'adresseEvenement' => $item->getAdresseEvenement(),
+                'dateRentree' => $item->getDateRentree()?->format('Y-m-d'),
                 'prixFinal' => $item->getPrixFinal(),
             ],
             $devisRepository->findAllOrderedByCreatedAtDesc(),
@@ -122,6 +125,47 @@ class DevisController extends AbstractController
             'prixCaution' => $facture->getPrixCaution(),
             'prixFinal' => $facture->getPrixFinal(),
         ], 201);
+    }
+
+    #[Route('/api/devis/{id}/heure-recuperation', name: 'api_devis_heure_recuperation', methods: ['PATCH'], requirements: ['id' => '\d+'])]
+    public function mettreAJourHeureRecuperation(
+        int $id,
+        Request $request,
+        DevisRepository $devisRepository,
+        EntityManagerInterface $entityManager,
+    ): JsonResponse {
+        $devis = $devisRepository->find($id);
+
+        if ($devis === null) {
+            return $this->json(['message' => 'Devis introuvable.'], 404);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!is_array($data)) {
+            return $this->json(['message' => 'Corps de requête JSON invalide.'], 400);
+        }
+
+        $heureBrute = trim((string) ($data['heure'] ?? ''));
+
+        if ($heureBrute === '') {
+            $devis->setHeureRecuperationVaisselle(null);
+        } elseif (!preg_match('/^\d{2}:\d{2}$/', $heureBrute)) {
+            return $this->json(['message' => 'Heure invalide (format HH:MM attendu).'], 422);
+        } else {
+            $heure = \DateTimeImmutable::createFromFormat('H:i', $heureBrute);
+            if ($heure === false) {
+                return $this->json(['message' => 'Heure invalide.'], 422);
+            }
+            $devis->setHeureRecuperationVaisselle($heure);
+        }
+
+        $entityManager->flush();
+
+        return $this->json([
+            'id' => $devis->getId(),
+            'heureRecuperationVaisselle' => $devis->getHeureRecuperationVaisselle()?->format('H:i'),
+        ]);
     }
 
     #[Route('/api/devis/{id}', name: 'api_devis_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]

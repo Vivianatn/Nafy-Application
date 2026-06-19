@@ -37,11 +37,25 @@ export async function initApi() {
 
     const config = await reponse.json()
 
-    if (config.apiUrl) {
-      api.defaults.baseURL = String(config.apiUrl).replace(/\/$/, '')
+    if (!config.apiUrl) {
+      return
     }
+
+    let apiUrl = String(config.apiUrl).replace(/\/$/, '')
+
+    // URL relative : même origine que la page embarquée
+    if (apiUrl.startsWith('/')) {
+      api.defaults.baseURL = apiUrl
+      return
+    }
+
+    if (window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
+      apiUrl = apiUrl.replace(/^http:/, 'https:')
+    }
+
+    api.defaults.baseURL = apiUrl
   } catch {
-    // Configuration optionnelle : l'utilisateur peut aussi utiliser CAPACITOR_SERVER_URL
+    // Configuration optionnelle
   }
 }
 

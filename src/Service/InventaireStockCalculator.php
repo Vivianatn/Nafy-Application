@@ -37,11 +37,11 @@ final class InventaireStockCalculator
             $reserves[$kit->getId()] = 0;
         }
 
-        foreach ($this->devisRepository->findAllWithLignesKits() as $devis) {
+        foreach ($this->devisRepository->findAllWithLignesKitsAffectantDate($date) as $devis) {
             $this->accumulerReserves($reserves, $date, $devis);
         }
 
-        foreach ($this->factureRepository->findAllWithLignesKits() as $facture) {
+        foreach ($this->factureRepository->findAllWithLignesKitsAffectantDate($date) as $facture) {
             $this->accumulerReserves($reserves, $date, $facture);
         }
 

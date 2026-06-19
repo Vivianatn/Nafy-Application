@@ -45,6 +45,29 @@ class FactureRepository extends ServiceEntityRepository
     /**
      * @return list<Facture>
      */
+    public function findAllWithLignesKitsAffectantDate(\DateTimeImmutable $date): array
+    {
+        $dateVeille = $date->modify('-1 day');
+
+        return $this->createQueryBuilder('f')
+            ->leftJoin('f.lignesKits', 'fk')->addSelect('fk')
+            ->leftJoin('fk.kit', 'k')->addSelect('k')
+            ->where('f.dateReservation IS NOT NULL')
+            ->andWhere('f.dateReservation <= :date')
+            ->andWhere('(
+                (f.vaisselleANettoyer = true AND f.dateRentree IS NOT NULL AND f.dateRentree >= :dateVeille)
+                OR (f.vaisselleANettoyer = false AND f.dateRentree IS NOT NULL AND f.dateRentree >= :date)
+                OR (f.dateRentree IS NULL AND f.dateReservation >= :date)
+            )')
+            ->setParameter('date', $date)
+            ->setParameter('dateVeille', $dateVeille)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Facture>
+     */
     public function findAllWithLignesKits(): array
     {
         return $this->createQueryBuilder('f')

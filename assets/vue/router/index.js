@@ -33,6 +33,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/evenements',
+    name: 'evenements',
+    component: () => import('../views/EvenementsView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/devis',
     name: 'devis',
     component: () => import('../views/DevisView.vue'),
@@ -43,6 +49,12 @@ const routes = [
     name: 'facture',
     component: () => import('../views/FactureView.vue'),
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/secretaires',
+    name: 'secretaires',
+    component: () => import('../views/SecretairesView.vue'),
+    meta: { requiresAuth: true, requiresResponsable: true },
   },
   {
     path: '/secretaire/ajouter',

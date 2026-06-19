@@ -114,7 +114,9 @@ class CommandePdfGenerator
             Response::HTTP_OK,
             [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
+                'Content-Disposition' => sprintf('attachment; filename="%s"; filename*=UTF-8\'\'%s', $filename, rawurlencode($filename)),
+                'Cache-Control' => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
             ],
         );
     }

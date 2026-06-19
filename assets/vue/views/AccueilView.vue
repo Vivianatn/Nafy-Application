@@ -70,7 +70,11 @@
               <p v-if="evenement.dateReservation" class="historique__ligne">
                 Réservation le {{ formaterDate(evenement.dateReservation) }}
               </p>
-              <HeureRecuperationVaisselle :devis-id="evenement.id" />
+              <HeureRecuperationVaisselle
+                :devis-id="evenement.id"
+                :heure-initiale="evenement.heureRecuperationVaisselle ?? ''"
+                @heure-change="mettreAJourHeureEvenement"
+              />
               <button
                 type="button"
                 class="bouton bouton--secondaire historique__supprimer"
@@ -125,10 +129,10 @@
             <button
               type="button"
               class="bouton bouton--secondaire historique__action"
-              :disabled="telechargementEnCours === commande.type + '-' + commande.id"
-              @click="telechargerCommande(commande.type, commande.id, libelleNumero(commande))"
+              :disabled="telechargementEnCours === 'dl-' + commande.type + '-' + commande.id"
+              @click="telechargerCommande(commande)"
             >
-              {{ telechargementEnCours === commande.type + '-' + commande.id ? 'Téléchargement…' : 'Télécharger' }}
+              {{ telechargementEnCours === 'dl-' + commande.type + '-' + commande.id ? 'Téléchargement…' : 'Télécharger' }}
             </button>
             <button
               type="button"
@@ -149,13 +153,14 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api'
+import { telechargerPdfDevis, telechargerPdfFacture } from '../composables/telechargement'
 import { estAujourdHui as estCreeAujourdHui, formaterDate, formaterDateHeure } from '../composables/date'
 import { useNotification } from '../composables/notification'
 import { useHeuresRecuperation } from '../composables/heuresRecuperation'
 import HeureRecuperationVaisselle from '../components/HeureRecuperationVaisselle.vue'
 
 const { notifier } = useNotification()
-const { formaterHeure, getHeure } = useHeuresRecuperation()
+const { formaterHeure } = useHeuresRecuperation()
 const route = useRoute()
 
 const joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -237,8 +242,8 @@ function moisSuivant() {
 
 const chargement = ref(true)
 const suppressionEnCours = ref('')
-const telechargementEnCours = ref('')
 const factureEnCours = ref('')
+const telechargementEnCours = ref('')
 const devis = ref([])
 const factures = ref([])
 
@@ -270,13 +275,24 @@ function heureJour(jour) {
   const evenementsDuJour = evenements.value.filter((e) => e.dateReservation === cle)
 
   for (const evenement of evenementsDuJour) {
-    const heure = getHeure(evenement.id)
-    if (heure) {
-      return heure
+    if (evenement.heureRecuperationVaisselle) {
+      return evenement.heureRecuperationVaisselle
     }
   }
 
   return ''
+}
+
+function mettreAJourHeureEvenement({ devisId, heure }) {
+  const index = devis.value.findIndex((item) => item.id === devisId)
+  if (index === -1) {
+    return
+  }
+
+  devis.value[index] = {
+    ...devis.value[index],
+    heureRecuperationVaisselle: heure,
+  }
 }
 
 const evenementsJourSelectionne = computed(() => {
@@ -342,36 +358,28 @@ async function supprimerCommande(type, id, numero) {
   }
 }
 
-async function telechargerCommande(type, id, numero) {
-  const cle = `${type}-${id}`
+function libelleNumero(commande) {
+  return commande.numero || String(commande.id)
+}
+
+async function telechargerCommande(commande) {
+  const cle = `dl-${commande.type}-${commande.id}`
   telechargementEnCours.value = cle
+  const numero = libelleNumero(commande)
 
   try {
-    const endpoint = type === 'devis' ? `/devis/${id}/pdf` : `/factures/${id}/pdf`
-    const reponse = await api.get(endpoint, { responseType: 'blob' })
-    const url = window.URL.createObjectURL(new Blob([reponse.data], { type: 'application/pdf' }))
-    const lien = document.createElement('a')
-    lien.href = url
-    lien.download = `${type}-${numero}.pdf`
-    document.body.appendChild(lien)
-    lien.click()
-    lien.remove()
-    window.URL.revokeObjectURL(url)
-    notifier(
-      type === 'devis'
-        ? `Le devis n°${numero} a bien été téléchargé.`
-        : `La facture n°${numero} a bien été téléchargée.`,
-      'succes',
-    )
-  } catch {
-    notifier('Le téléchargement a échoué. Réessayez plus tard.', 'erreur')
+    const resultat = commande.type === 'devis'
+      ? await telechargerPdfDevis(commande.id, numero)
+      : await telechargerPdfFacture(commande.id, numero)
+
+    const nom = resultat?.nom || `${commande.type}-${numero}.pdf`
+    notifier(`Document téléchargé : ${nom}`, 'succes')
+  } catch (erreur) {
+    console.error('Telechargement echoue', erreur)
+    notifier('Le téléchargement a échoué. Vérifiez que vous êtes connecté.', 'erreur')
   } finally {
     telechargementEnCours.value = ''
   }
-}
-
-function libelleNumero(commande) {
-  return commande.numero || String(commande.id)
 }
 
 async function creerFactureDepuisDevis(devisId, numeroDevis) {
@@ -456,17 +464,17 @@ onMounted(async () => {
     cursor: pointer;
     transition:
       background-color $transition,
-      transform $transition-bounce,
+      transform $transition,
       box-shadow $transition;
 
     &:hover {
       background: $color-gold-ghost;
-      transform: scale(1.08);
+      transform: scale(1.03);
       box-shadow: $shadow-soft;
     }
 
     &:active {
-      transform: scale(0.94);
+      transform: scale(0.98);
     }
   }
 
@@ -479,7 +487,7 @@ onMounted(async () => {
 
   &__corps {
     padding: $space-sm $space-md $space-md;
-    animation: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: fade-up 0.45s cubic-bezier(0.33, 1, 0.68, 1);
   }
 
   &__entete-jours {
@@ -516,7 +524,7 @@ onMounted(async () => {
     cursor: pointer;
     transition:
       background-color $transition,
-      transform $transition-bounce,
+      transform $transition,
       box-shadow $transition;
 
     &--vide {
@@ -526,11 +534,11 @@ onMounted(async () => {
 
     &:not(&--vide):hover {
       background: $color-gold-ghost;
-      transform: scale(1.12);
+      transform: scale(1.04);
     }
 
     &:not(&--vide):active {
-      transform: scale(0.92);
+      transform: scale(0.98);
     }
 
     &--aujourdhui {
@@ -583,9 +591,9 @@ onMounted(async () => {
 .calendrier-detail-enter-active,
 .calendrier-detail-leave-active {
   transition:
-    opacity 0.28s ease,
-    max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.28s ease;
+    opacity 0.38s ease-out,
+    max-height 0.45s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.38s ease-out;
   overflow: hidden;
 }
 
@@ -593,7 +601,7 @@ onMounted(async () => {
 .calendrier-detail-leave-to {
   opacity: 0;
   max-height: 0;
-  transform: translateY(-8px);
+  transform: translateY(-4px);
 }
 
 .calendrier-detail-enter-to,
@@ -668,9 +676,9 @@ onMounted(async () => {
       }
 
       &:hover {
-        transform: translateY(-4px);
+        transform: translateY(-2px);
         border-color: rgba(204, 167, 97, 0.65);
-        box-shadow: $shadow-lift;
+        box-shadow: $shadow-soft;
       }
     }
 
@@ -802,6 +810,11 @@ onMounted(async () => {
     max-width: none;
     height: var(--btn-h);
     font-size: var(--fs-base);
+
+    &--lien {
+      text-decoration: none;
+      box-sizing: border-box;
+    }
   }
 
   &__numero {

@@ -29,6 +29,9 @@ class Devis
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $dateReservation = null;
 
+    #[ORM\Column(type: Types::TIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $heureRecuperationVaisselle = null;
+
     #[ORM\Column]
     private bool $chandeliers = false;
 
@@ -152,6 +155,18 @@ class Devis
     public function setDateReservation(?\DateTimeImmutable $dateReservation): static
     {
         $this->dateReservation = $dateReservation;
+
+        return $this;
+    }
+
+    public function getHeureRecuperationVaisselle(): ?\DateTimeInterface
+    {
+        return $this->heureRecuperationVaisselle;
+    }
+
+    public function setHeureRecuperationVaisselle(?\DateTimeInterface $heureRecuperationVaisselle): static
+    {
+        $this->heureRecuperationVaisselle = $heureRecuperationVaisselle;
 
         return $this;
     }
