@@ -142,6 +142,15 @@ img {
   color: $color-text;
   margin-bottom: $space-lg;
   line-height: 1.35;
+
+  &--info {
+    margin-top: calc(-1 * #{$space-sm});
+    padding: $space-sm $space-md;
+    border-radius: $radius;
+    background: rgba(204, 167, 97, 0.08);
+    border: 1px solid rgba(204, 167, 97, 0.22);
+    color: $color-muted;
+  }
 }
 
 .section-titre {

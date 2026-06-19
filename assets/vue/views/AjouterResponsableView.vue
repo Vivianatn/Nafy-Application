@@ -1,6 +1,9 @@
 <template>
   <div class="anim-page">
     <h1 class="page-titre">Ajouter un responsable</h1>
+    <p class="page-sous-titre page-sous-titre--info">
+      Cette action est réservée aux <strong>responsables</strong>.
+    </p>
 
     <form class="form anim-form" @submit.prevent="envoyer">
       <p v-if="messageErreur" class="message message--erreur">{{ messageErreur }}</p>

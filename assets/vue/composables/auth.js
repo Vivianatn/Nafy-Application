@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import api from '../api'
 
 const session = ref({
@@ -9,7 +9,52 @@ const session = ref({
 
 let promesseInitialisation = null
 
+export function utilisateurEstResponsable(utilisateur) {
+  if (!utilisateur) {
+    return false
+  }
+
+  if (utilisateur.type === 'responsable') {
+    return true
+  }
+
+  return Array.isArray(utilisateur.roles) && utilisateur.roles.includes('ROLE_RESPONSABLE')
+}
+
+export function utilisateurEstSecretaire(utilisateur) {
+  if (!utilisateur) {
+    return false
+  }
+
+  if (utilisateurEstResponsable(utilisateur)) {
+    return false
+  }
+
+  if (utilisateur.type === 'secretaire') {
+    return true
+  }
+
+  return Array.isArray(utilisateur.roles) && utilisateur.roles.includes('ROLE_SECRETAIRE')
+}
+
+export function libelleRoleUtilisateur(utilisateur) {
+  if (utilisateurEstResponsable(utilisateur)) {
+    return 'Responsable'
+  }
+
+  if (utilisateurEstSecretaire(utilisateur)) {
+    return 'Secrétaire'
+  }
+
+  return 'Utilisateur'
+}
+
 export function useAuth() {
+  const estResponsable = computed(() => utilisateurEstResponsable(session.value.utilisateur))
+  const estSecretaire = computed(() => utilisateurEstSecretaire(session.value.utilisateur))
+  const peutGererSecretaires = computed(() => estResponsable.value)
+  const roleUtilisateur = computed(() => libelleRoleUtilisateur(session.value.utilisateur))
+
   async function verifierSession() {
     if (promesseInitialisation) {
       return promesseInitialisation
@@ -25,7 +70,6 @@ export function useAuth() {
           session.value.connecte = false
           session.value.utilisateur = null
         } else if (!error.response) {
-          // Erreur réseau : ne pas déconnecter si une session était déjà active.
           if (!session.value.connecte) {
             session.value.utilisateur = null
           }
@@ -61,15 +105,14 @@ export function useAuth() {
     }
   }
 
-  function estResponsable() {
-    return session.value.utilisateur?.type === 'responsable'
-  }
-
   return {
     session,
+    estResponsable,
+    estSecretaire,
+    peutGererSecretaires,
+    roleUtilisateur,
     verifierSession,
     connecter,
     deconnecter,
-    estResponsable,
   }
 }

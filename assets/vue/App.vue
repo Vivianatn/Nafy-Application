@@ -1,7 +1,7 @@
 <template>
-  <div id="app" :class="{ 'app--auth': estPageAuth }">
-    <MenuBurger v-if="session.connecte" />
-    <main class="content" :class="{ 'content--auth': estPageAuth }">
+  <div id="app" :class="classesApp">
+    <AppHeader v-if="afficherNavigation" />
+    <main class="content" :class="classesContenu">
       <div v-if="!session.initialise" class="app__chargement">
         <span class="spinner" aria-hidden="true"></span>
         <span>Chargement…</span>
@@ -12,6 +12,7 @@
         </transition>
       </router-view>
     </main>
+    <MenuBottom v-if="afficherNavigation" />
     <NotificationPopup />
   </div>
 </template>
@@ -19,7 +20,8 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import MenuBurger from './views/MenuView.vue'
+import AppHeader from './components/AppHeader.vue'
+import MenuBottom from './components/MenuBottom.vue'
 import NotificationPopup from './components/NotificationPopup.vue'
 import { useAuth } from './composables/auth'
 
@@ -27,6 +29,17 @@ const route = useRoute()
 const { session, verifierSession } = useAuth()
 
 const estPageAuth = computed(() => Boolean(route.meta.guest))
+const afficherNavigation = computed(() => session.value.connecte && !estPageAuth.value)
+
+const classesApp = computed(() => ({
+  'app--auth': estPageAuth.value,
+  'app--connecte': afficherNavigation.value,
+}))
+
+const classesContenu = computed(() => ({
+  'content--auth': estPageAuth.value,
+  'content--avec-tabbar': afficherNavigation.value,
+}))
 
 onMounted(verifierSession)
 </script>
@@ -38,6 +51,12 @@ onMounted(verifierSession)
   padding: 0;
   min-height: 100vh;
   min-height: 100dvh;
+}
+
+@media (max-width: #{$bp-desktop - 1px}) {
+  .app--connecte .content--avec-tabbar {
+    padding-bottom: calc(#{$space-xl} + #{$tabbar-height} + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .app__chargement {

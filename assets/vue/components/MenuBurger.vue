@@ -1,9 +1,5 @@
 <template>
-  <header class="topbar">
-    <router-link :to="{ name: 'home' }" class="topbar__logo" @click="fermer">
-      Kamille
-    </router-link>
-
+  <div class="menu-burger">
     <button
       type="button"
       class="burger"
@@ -16,38 +12,39 @@
       <span></span>
       <span></span>
     </button>
-  </header>
 
-  <Transition name="overlay-fade">
-    <div v-if="ouvert" class="overlay" @click="fermer"></div>
-  </Transition>
+    <Transition name="overlay-fade">
+      <div v-if="ouvert" class="overlay" @click="fermer"></div>
+    </Transition>
 
-  <nav class="drawer" :class="{ 'drawer--open': ouvert }">
-    <ul>
-      <li><router-link :to="{ name: 'inventaire' }" @click="fermer">Inventaire</router-link></li>
-      <li><router-link :to="{ name: 'evenements' }" @click="fermer">Événements</router-link></li>
-      <li><router-link :to="{ name: 'devis' }" @click="fermer">Devis</router-link></li>
-      <li><router-link :to="{ name: 'facture' }" @click="fermer">Facturation</router-link></li>
-      <li v-if="estResponsable()"><router-link :to="{ name: 'secretaires' }" @click="fermer">Secrétaires</router-link></li>
-      <li v-if="estResponsable()"><router-link :to="{ name: 'ajouter-secretaire' }" @click="fermer">+ Secrétaire</router-link></li>
-      <li v-if="estResponsable()" class="drawer__extra"><router-link :to="{ name: 'ajouter-responsable' }" @click="fermer">+ Responsable</router-link></li>
-      <li class="drawer__extra"><router-link :to="{ name: 'home' }" @click="fermer">Accueil</router-link></li>
-      <li class="drawer__extra">
-        <button type="button" class="drawer__deconnexion" @click="seDeconnecter">
-          Déconnexion
-        </button>
-      </li>
-    </ul>
-  </nav>
+    <nav class="drawer" :class="{ 'drawer--open': ouvert }" aria-label="Menu principal">
+      <ul>
+        <li><router-link :to="{ name: 'home' }" @click="fermer">Accueil</router-link></li>
+        <li><router-link :to="{ name: 'inventaire' }" @click="fermer">Inventaire</router-link></li>
+        <li><router-link :to="{ name: 'evenements' }" @click="fermer">Événements</router-link></li>
+        <li><router-link :to="{ name: 'devis' }" @click="fermer">Devis</router-link></li>
+        <li><router-link :to="{ name: 'facture' }" @click="fermer">Facturation</router-link></li>
+        <li v-if="peutGererSecretaires"><router-link :to="{ name: 'secretaires' }" @click="fermer">Secrétaires</router-link></li>
+        <li v-if="peutGererSecretaires"><router-link :to="{ name: 'ajouter-secretaire' }" @click="fermer">+ Secrétaire</router-link></li>
+        <li v-if="peutGererSecretaires" class="drawer__extra"><router-link :to="{ name: 'ajouter-responsable' }" @click="fermer">+ Responsable</router-link></li>
+        <li class="drawer__extra">
+          <button type="button" class="drawer__deconnexion" @click="seDeconnecter">
+            Déconnexion
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/auth'
 
+const route = useRoute()
 const router = useRouter()
-const { deconnecter, estResponsable } = useAuth()
+const { peutGererSecretaires, deconnecter } = useAuth()
 const ouvert = ref(false)
 
 function fermer() {
@@ -59,35 +56,15 @@ async function seDeconnecter() {
   await deconnecter()
   router.push({ name: 'connexion' })
 }
+
+watch(() => route.fullPath, fermer)
 </script>
 
 <style lang="scss" scoped>
 @use '../../styles/variables' as *;
 
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  height: $header-height;
-  background: $color-gold;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 $space-side;
-  transition: box-shadow $transition;
-
-  &__logo {
-    font-weight: 400;
-    letter-spacing: 0.02em;
-    color: $color-text;
-    font-size: var(--fs-base);
-    transition: opacity $transition, transform $transition;
-
-    &:hover {
-      opacity: 0.75;
-      transform: translateX(2px);
-    }
-  }
+.menu-burger {
+  display: none;
 }
 
 .burger {
@@ -97,6 +74,7 @@ async function seDeconnecter() {
   border: 0;
   padding: 0;
   position: relative;
+  flex-shrink: 0;
   transition: transform $transition;
 
   &:hover {
@@ -204,25 +182,13 @@ async function seDeconnecter() {
   }
 }
 
-@media (min-width: $bp-tablet) {
-  .topbar {
-    padding: 0 $space-side-tablet;
-  }
-}
-
 @media (min-width: $bp-desktop) {
-  .topbar {
-    padding: 0 $space-side-desktop;
+  .menu-burger {
+    display: block;
   }
 
   .drawer {
     width: 240px;
-  }
-}
-
-@media (min-width: $bp-wide) {
-  .topbar {
-    padding: 0 $space-side-wide;
   }
 }
 </style>

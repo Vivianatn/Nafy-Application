@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuth } from '../composables/auth'
+import { useAuth, utilisateurEstResponsable } from '../composables/auth'
 
 const routes = [
   {
@@ -51,6 +51,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/plus',
+    name: 'plus',
+    component: () => import('../views/PlusView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/secretaires',
     name: 'secretaires',
     component: () => import('../views/SecretairesView.vue'),
@@ -96,7 +102,7 @@ router.beforeEach(async (to) => {
     }
   }
 
-  if (to.meta.requiresResponsable && session.value.utilisateur?.type !== 'responsable') {
+  if (to.meta.requiresResponsable && !utilisateurEstResponsable(session.value.utilisateur)) {
     return { name: 'home' }
   }
 

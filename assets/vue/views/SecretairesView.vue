@@ -4,8 +4,15 @@
       <div>
         <h1 class="page-titre">Secrétaires</h1>
         <p class="page-sous-titre">Informations générales de l'équipe</p>
+        <p class="secretaires__mention">
+          Réservé aux responsables — seuls les responsables peuvent ajouter une secrétaire.
+        </p>
       </div>
-      <router-link :to="{ name: 'ajouter-secretaire' }" class="bouton secretaires__ajouter">
+      <router-link
+        v-if="peutGererSecretaires"
+        :to="{ name: 'ajouter-secretaire' }"
+        class="bouton secretaires__ajouter"
+      >
         + Ajouter
       </router-link>
     </header>
@@ -67,6 +74,9 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import api from '../api'
+import { useAuth } from '../composables/auth'
+
+const { peutGererSecretaires } = useAuth()
 
 const secretaires = ref([])
 const chargement = ref(true)
@@ -113,6 +123,13 @@ onMounted(chargerSecretaires)
     flex-shrink: 0;
     text-decoration: none;
     white-space: nowrap;
+  }
+
+  &__mention {
+    margin-top: $space-xs;
+    font-size: var(--fs-petit);
+    line-height: 1.4;
+    color: $color-muted;
   }
 
   &__etat {
