@@ -66,12 +66,18 @@ const { session, roleUtilisateur } = useAuth()
   }
 
   :deep(.menu-burger) {
+    display: none;
+  }
+}
+
+@media (min-width: $bp-desktop) {
+  .entete :deep(.menu-burger) {
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
   }
 
-  :deep(.burger) {
+  .entete :deep(.burger) {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -87,7 +93,7 @@ const { session, roleUtilisateur } = useAuth()
     flex-shrink: 0;
   }
 
-  :deep(.burger__ligne) {
+  .entete :deep(.burger__ligne) {
     display: block;
     width: 24px;
     height: 2px;
@@ -96,16 +102,16 @@ const { session, roleUtilisateur } = useAuth()
     transition: transform 0.32s ease, opacity 0.32s ease;
   }
 
-  :deep(.burger--open .burger__ligne:nth-child(1)) {
+  .entete :deep(.burger--open .burger__ligne:nth-child(1)) {
     transform: translateY(7px) rotate(45deg);
   }
 
-  :deep(.burger--open .burger__ligne:nth-child(2)) {
+  .entete :deep(.burger--open .burger__ligne:nth-child(2)) {
     opacity: 0;
     transform: scaleX(0);
   }
 
-  :deep(.burger--open .burger__ligne:nth-child(3)) {
+  .entete :deep(.burger--open .burger__ligne:nth-child(3)) {
     transform: translateY(-7px) rotate(-45deg);
   }
 }
