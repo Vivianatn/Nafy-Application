@@ -1,30 +1,11 @@
 @use 'variables' as *;
 
-// Safe areas (encoches iPhone, barre d’accueil)
-.topbar {
-  padding-top: env(safe-area-inset-top, 0);
-  padding-left: max($space-side, env(safe-area-inset-left, 0));
-  padding-right: max($space-side, env(safe-area-inset-right, 0));
-  min-height: calc(#{$header-height} + env(safe-area-inset-top, 0));
-}
-
 .content {
   padding-bottom: calc(#{$space-xl} + env(safe-area-inset-bottom, 0px));
 }
 
 .drawer {
   padding-bottom: env(safe-area-inset-bottom, 0);
-}
-
-// Zones tactiles minimales (44 px)
-.burger {
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin: -8px;
-  padding: 8px;
 }
 
 .calendrier__nav-btn {
@@ -131,7 +112,7 @@
   .bouton--secondaire:hover,
   .champ-inline:hover,
   .kit__photo:hover,
-  .topbar__logo:hover {
+  .entete__logo:hover {
     transform: none;
     box-shadow: none;
   }

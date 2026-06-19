@@ -8,9 +8,9 @@
       aria-label="Menu"
       @click="ouvert = !ouvert"
     >
-      <span></span>
-      <span></span>
-      <span></span>
+      <span class="burger__ligne"></span>
+      <span class="burger__ligne"></span>
+      <span class="burger__ligne"></span>
     </button>
 
     <Transition name="overlay-fade">
@@ -64,41 +64,9 @@ watch(() => route.fullPath, fermer)
 @use '../../styles/variables' as *;
 
 .menu-burger {
-  display: none;
-}
-
-.burger {
-  width: 24px;
-  height: 18px;
-  background: none;
-  border: 0;
-  padding: 0;
-  position: relative;
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
-  transition: transform $transition;
-
-  &:hover {
-    transform: scale(1.03);
-  }
-
-  span {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: $color-text;
-    transition: transform 0.38s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.32s ease-out;
-
-    &:nth-child(1) { top: 0; }
-    &:nth-child(2) { top: 8px; }
-    &:nth-child(3) { top: 16px; }
-  }
-
-  &--open span {
-    &:nth-child(1) { transform: translateY(8px) rotate(45deg); }
-    &:nth-child(2) { opacity: 0; transform: scaleX(0); }
-    &:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
-  }
 }
 
 .overlay {
@@ -183,10 +151,6 @@ watch(() => route.fullPath, fermer)
 }
 
 @media (min-width: $bp-desktop) {
-  .menu-burger {
-    display: block;
-  }
-
   .drawer {
     width: 240px;
   }

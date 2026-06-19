@@ -3,10 +3,9 @@
     <router-link :to="{ name: 'home' }" class="entete__logo">
       Kamille
     </router-link>
-    <div class="entete__actions">
-      <p v-if="session.utilisateur" class="entete__role">
-        {{ roleUtilisateur }}
-      </p>
+
+    <div v-if="session.utilisateur" class="entete__droite">
+      <span class="entete__role">{{ roleUtilisateur }}</span>
       <MenuBurger />
     </div>
   </header>
@@ -26,13 +25,17 @@ const { session, roleUtilisateur } = useAuth()
   position: sticky;
   top: 0;
   z-index: 30;
+  box-sizing: border-box;
+  min-height: $header-height;
   height: $header-height;
   background: $color-gold;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: $space-md;
-  padding: 0 $space-side;
+  column-gap: $space-md;
+  padding: env(safe-area-inset-top, 0) $space-side 0;
+  padding-left: max($space-side, env(safe-area-inset-left, 0));
+  padding-right: max($space-side, env(safe-area-inset-right, 0));
   box-shadow: 0 1px 0 rgba(29, 29, 29, 0.06);
 
   &__logo {
@@ -40,40 +43,91 @@ const { session, roleUtilisateur } = useAuth()
     letter-spacing: 0.02em;
     color: $color-text;
     font-size: var(--fs-base);
+    line-height: 1;
   }
 
-  &__actions {
-    display: flex;
+  &__droite {
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: $space-md;
-    min-width: 0;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
   }
 
   &__role {
-    margin: 0;
     font-size: var(--fs-petit);
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: rgba(29, 29, 29, 0.72);
     white-space: nowrap;
+    line-height: 1;
+  }
+
+  :deep(.menu-burger) {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  :deep(.burger) {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  :deep(.burger__ligne) {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: $color-text;
+    border-radius: 1px;
+    transition: transform 0.32s ease, opacity 0.32s ease;
+  }
+
+  :deep(.burger--open .burger__ligne:nth-child(1)) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  :deep(.burger--open .burger__ligne:nth-child(2)) {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+
+  :deep(.burger--open .burger__ligne:nth-child(3)) {
+    transform: translateY(-7px) rotate(-45deg);
   }
 }
 
 @media (min-width: $bp-tablet) {
   .entete {
-    padding: 0 $space-side-tablet;
+    padding-left: max($space-side-tablet, env(safe-area-inset-left, 0));
+    padding-right: max($space-side-tablet, env(safe-area-inset-right, 0));
   }
 }
 
 @media (min-width: $bp-desktop) {
   .entete {
-    padding: 0 $space-side-desktop;
+    padding-left: max($space-side-desktop, env(safe-area-inset-left, 0));
+    padding-right: max($space-side-desktop, env(safe-area-inset-right, 0));
   }
 }
 
 @media (min-width: $bp-wide) {
   .entete {
-    padding: 0 $space-side-wide;
+    padding-left: max($space-side-wide, env(safe-area-inset-left, 0));
+    padding-right: max($space-side-wide, env(safe-area-inset-right, 0));
   }
 }
 </style>
