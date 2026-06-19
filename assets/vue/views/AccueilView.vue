@@ -153,7 +153,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api'
-import { telechargerPdfDevis, telechargerPdfFacture } from '../composables/telechargement'
+import { telechargerPdfDevis, telechargerPdfFacture, messageTelechargement } from '../composables/telechargement'
 import { estAujourdHui as estCreeAujourdHui, formaterDate, formaterDateHeure } from '../composables/date'
 import { useNotification } from '../composables/notification'
 import { useHeuresRecuperation } from '../composables/heuresRecuperation'
@@ -372,9 +372,11 @@ async function telechargerCommande(commande) {
       ? await telechargerPdfDevis(commande.id, numero)
       : await telechargerPdfFacture(commande.id, numero)
 
-    const nom = resultat?.nom || `${commande.type}-${numero}.pdf`
-    notifier(`Document téléchargé : ${nom}`, 'succes')
+    notifier(messageTelechargement(resultat), 'succes')
   } catch (erreur) {
+    if (erreur?.name === 'AbortError') {
+      return
+    }
     console.error('Telechargement echoue', erreur)
     notifier('Le téléchargement a échoué. Vérifiez que vous êtes connecté.', 'erreur')
   } finally {

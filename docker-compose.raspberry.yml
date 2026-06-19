@@ -1,44 +1,28 @@
-# Stack Kamille Events Manager — Raspberry Pi + Tailscale
-# Usage : docker compose -f docker-compose.raspberry.yml up -d
+# Stack Nafy — Raspberry Pi + MariaDB existante (~/docker-compose.yml → vivian-db-1)
+# Usage : docker compose -f docker-compose.raspberry.yml --env-file .env.local up -d --build
 
 services:
   web:
     build:
       context: .
       dockerfile: docker/Dockerfile.raspberry
-    container_name: kamille-web
+    container_name: nafy-web
     restart: unless-stopped
     ports:
       - "8319:80"
     volumes:
       - .:/var/www/html
-    depends_on:
-      db:
-        condition: service_healthy
+    networks:
+      - default
+      - vivian_db
     environment:
       APP_ENV: ${APP_ENV:-prod}
       APP_SECRET: ${APP_SECRET:-changez_moi_en_production}
-      DATABASE_URL: mysql://${DB_USER:-nafy}:${DB_PASSWORD:-changez_moi}@db:3306/nafy-application?serverVersion=10.8.8-MariaDB&charset=utf8mb4
+      DATABASE_URL: mysql://${DB_USER:-vivian}:${DB_PASSWORD}@db:3306/nafy-application?serverVersion=12.3.2-MariaDB&charset=utf8mb4
       DEFAULT_URI: ${DEFAULT_URI:-http://127.0.0.1:8319}
       CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-'^https?://.*$'}
 
-  db:
-    image: mariadb:10.8
-    container_name: kamille-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret}
-      MYSQL_DATABASE: nafy-application
-      MYSQL_USER: ${DB_USER:-nafy}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-changez_moi}
-    volumes:
-      - kamille-db-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-volumes:
-  kamille-db-data:
+networks:
+  vivian_db:
+    external: true
+    name: vivian_default

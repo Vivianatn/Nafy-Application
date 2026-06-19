@@ -1,7 +1,7 @@
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
-        server_version: '10.8.8-MariaDB'
+        server_version: '12.3.2-MariaDB'
 
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true

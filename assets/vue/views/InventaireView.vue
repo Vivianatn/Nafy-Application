@@ -67,7 +67,7 @@
 <script setup>
 import { ref, watch, onBeforeUnmount } from 'vue'
 import api from '../api'
-import { telechargerPdfCatalogue } from '../composables/telechargement'
+import { telechargerPdfCatalogue, messageTelechargement } from '../composables/telechargement'
 import { useNotification } from '../composables/notification'
 import { imageKit, onErreurImageKit } from '../composables/kitImages'
 
@@ -165,9 +165,11 @@ async function telechargerCatalogue() {
 
   try {
     const resultat = await telechargerPdfCatalogue()
-    const nom = resultat?.nom || 'catalogue-produits.pdf'
-    notifier(`Catalogue téléchargé : ${nom}`, 'succes')
-  } catch {
+    notifier(messageTelechargement(resultat), 'succes')
+  } catch (erreur) {
+    if (erreur?.name === 'AbortError') {
+      return
+    }
     notifier('Le téléchargement du catalogue a échoué.', 'erreur')
   } finally {
     catalogueEnCours.value = false

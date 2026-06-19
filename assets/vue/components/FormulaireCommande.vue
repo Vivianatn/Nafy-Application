@@ -2,7 +2,7 @@
   <div class="anim-page">
     <h1 class="page-titre">{{ titre }}</h1>
 
-    <form class="form anim-form" @submit.prevent="envoyer">
+    <form class="form form--mobile anim-form" @submit.prevent="envoyer">
       <p v-if="messageErreur" class="message message--erreur">{{ messageErreur }}</p>
 
       <section class="form-section">
@@ -21,7 +21,7 @@
           <input type="text" v-model.trim="clients[0].adresse" />
         </label>
         <label class="champ">Numéro de téléphone (référence)<span class="obligatoire">*</span>
-          <input type="tel" v-model.trim="clients[0].telephone" />
+          <input type="tel" inputmode="tel" autocomplete="tel" v-model.trim="clients[0].telephone" />
           <span v-if="erreurs.client1Telephone" class="champ__erreur">{{ erreurs.client1Telephone }}</span>
         </label>
 
@@ -41,7 +41,7 @@
             <input type="text" v-model.trim="clients[1].adresse" />
           </label>
           <label class="champ">Numéro de téléphone
-            <input type="tel" v-model.trim="clients[1].telephone" />
+            <input type="tel" inputmode="tel" autocomplete="tel" v-model.trim="clients[1].telephone" />
           </label>
           <button type="button" class="bouton bouton--secondaire" @click="retirerSecondClient">
             Retirer le second client
@@ -206,16 +206,18 @@
           Bon pour accord
         </label>
         <span v-if="erreurs.bonPourAccord" class="champ__erreur">{{ erreurs.bonPourAccord }}</span>
-        <button type="submit" class="bouton bouton--bloc" :disabled="envoiEnCours">
-          {{ envoiEnCours ? 'Envoi…' : libelleSubmit }}
-        </button>
+        <div class="form-submit-sticky">
+          <button type="submit" class="bouton bouton--bloc" :disabled="envoiEnCours">
+            {{ envoiEnCours ? 'Envoi…' : libelleSubmit }}
+          </button>
+        </div>
       </section>
     </form>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { calculerPrix, formaterPrix } from '../composables/calculPrix'
@@ -395,6 +397,12 @@ function construirePayload() {
   }
 }
 
+async function scrollVersPremiereErreur() {
+  await nextTick()
+  const cible = document.querySelector('.champ__erreur, .message--erreur')
+  cible?.closest('.champ, .form-section, .message')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 async function envoyer() {
   erreurs.value = {}
   messageErreur.value = ''
@@ -403,6 +411,7 @@ async function envoyer() {
   if (Object.keys(validation).length > 0) {
     erreurs.value = validation
     messageErreur.value = 'Veuillez corriger les champs en erreur.'
+    await scrollVersPremiereErreur()
     return
   }
 
@@ -431,6 +440,7 @@ async function envoyer() {
     if (error.response?.status === 422) {
       erreurs.value = error.response.data.erreurs ?? {}
       messageErreur.value = 'Veuillez corriger les champs en erreur.'
+      await scrollVersPremiereErreur()
     } else {
       messageErreur.value = error.response?.data?.message ?? 'Une erreur est survenue.'
     }

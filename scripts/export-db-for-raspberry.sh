@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# Exporte la base locale Docker (WSL) pour import sur le Raspberry Pi.
+# Exporte la base depuis vivian-db-1 pour sauvegarde ou migration.
 set -euo pipefail
 
-CONTAINER="${SYMFONY_CONTAINER:-symfony-db}"
+CONTAINER="${NAFY_DB_CONTAINER:-vivian-db-1}"
 BASE="${NAFY_DB:-nafy-application}"
+ROOT_PASSWORD="${MARIADB_ROOT_PASSWORD:-PASSWORD}"
 SORTIE="${1:-backup-nafy-application.sql}"
 
 echo "Export ${BASE} depuis ${CONTAINER} -> ${SORTIE}"
 
-docker exec "$CONTAINER" mysqldump -uroot -pPASSWORD "$BASE" > "$SORTIE"
+docker exec "$CONTAINER" mariadb-dump -uroot -p"${ROOT_PASSWORD}" "$BASE" > "$SORTIE"
 
-echo "Copiez sur le Pi :"
-echo "  scp ${SORTIE} pi@100.VOTRE.IP.TAILSCALE:/home/pi/nafy-application/"
 echo ""
-echo "Import sur le Pi :"
-echo "  docker exec -i kamille-db mysql -uroot -p\${DB_ROOT_PASSWORD} ${BASE} < ${SORTIE}"
+echo "Import sur ce serveur :"
+echo "  docker exec -i ${CONTAINER} mariadb -uroot -p${ROOT_PASSWORD} ${BASE} < ${SORTIE}"
+echo ""
+echo "phpMyAdmin : http://127.0.0.1:9010"

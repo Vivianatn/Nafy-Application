@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_mysql zip intl gd opcache \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql bcmath zip intl gd opcache \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 

@@ -13,9 +13,26 @@ export function estElectron() {
   return typeof window !== 'undefined' && window.electronAPI?.estElectron === true
 }
 
-/**
- * URL de telechargement (navigateur / lien direct).
- */
+function estIOS() {
+  if (typeof navigator === 'undefined') {
+    return false
+  }
+
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+function estMobile() {
+  if (typeof navigator === 'undefined') {
+    return false
+  }
+
+  return estIOS()
+    || /Android/i.test(navigator.userAgent)
+    || Capacitor.isNativePlatform()
+    || (navigator.maxTouchPoints > 0 && window.innerWidth < 900)
+}
+
 export function urlTelechargementMemeOrigine(cheminApi) {
   const suffixe = suffixeCheminApi(cheminApi)
   const segment = suffixe.startsWith('/') ? suffixe : `/${suffixe}`
@@ -23,8 +40,12 @@ export function urlTelechargementMemeOrigine(cheminApi) {
 
   const base = String(api.defaults.baseURL || '/api').replace(/\/$/, '')
 
-  if (Capacitor.isNativePlatform() && base.startsWith('http')) {
+  if (base.startsWith('http')) {
     return `${base}${segment}`
+  }
+
+  if (typeof window !== 'undefined') {
+    return new URL(relatif, window.location.origin).href
   }
 
   return relatif
@@ -69,7 +90,52 @@ function telechargerBlob(blob, nomFichier) {
   document.body.appendChild(lien)
   lien.click()
   lien.remove()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
+
+function ouvrirUrl(url) {
+  const lien = document.createElement('a')
+  lien.href = url
+  lien.target = '_blank'
+  lien.rel = 'noopener noreferrer'
+  document.body.appendChild(lien)
+  lien.click()
+  lien.remove()
+}
+
+async function partagerFichier(blob, nomFichier) {
+  if (!navigator.share || !navigator.canShare) {
+    return false
+  }
+
+  const file = new File([blob], nomFichier, { type: blob.type || 'application/pdf' })
+
+  if (!navigator.canShare({ files: [file] })) {
+    return false
+  }
+
+  await navigator.share({ files: [file], title: nomFichier })
+  return true
+}
+
+async function telechargerSurMobile(blob, nomFichier, urlFallback) {
+  try {
+    if (await partagerFichier(blob, nomFichier)) {
+      return { nom: nomFichier, methode: 'share' }
+    }
+  } catch (erreur) {
+    if (erreur?.name === 'AbortError') {
+      throw erreur
+    }
+  }
+
+  if (urlFallback) {
+    ouvrirUrl(urlFallback)
+    return { nom: nomFichier, methode: 'ouverture' }
+  }
+
+  telechargerBlob(blob, nomFichier)
+  return { nom: nomFichier, methode: 'blob' }
 }
 
 async function telechargerViaElectron(url, nomParDefaut, blob) {
@@ -85,9 +151,21 @@ async function telechargerViaElectron(url, nomParDefaut, blob) {
   throw new Error('API Electron indisponible')
 }
 
-/**
- * Telecharge un PDF (Electron, mobile ou navigateur).
- */
+export function messageTelechargement(resultat) {
+  const nom = resultat?.nom || 'document.pdf'
+
+  switch (resultat?.methode) {
+    case 'share':
+      return `Document prêt : ${nom}. Enregistrez-le via le menu Partager.`
+    case 'ouverture':
+      return estIOS()
+        ? `Document ouvert : ${nom}. Touchez Partager puis « Enregistrer dans Fichiers ».`
+        : `Document ouvert : ${nom}. Enregistrez-le depuis le menu de votre navigateur.`
+    default:
+      return `Document téléchargé : ${nom}`
+  }
+}
+
 export async function telechargerDocument(cheminApi, nomFichierParDefaut) {
   const cheminApiRelatif = suffixeCheminApi(cheminApi)
   const url = urlTelechargementMemeOrigine(cheminApi)
@@ -110,15 +188,29 @@ export async function telechargerDocument(cheminApi, nomFichierParDefaut) {
     )
 
     if (estElectron()) {
-      return telechargerViaElectron(url, nom, reponse.data)
+      const resultat = await telechargerViaElectron(url, nom, reponse.data)
+      return { nom, methode: 'electron', ...resultat }
+    }
+
+    if (estMobile()) {
+      return telechargerSurMobile(reponse.data, nom, url)
     }
 
     telechargerBlob(reponse.data, nom)
 
-    return { nom }
+    return { nom, methode: 'blob' }
   } catch (erreur) {
+    if (erreur?.name === 'AbortError') {
+      throw erreur
+    }
+
     if (estElectron() && window.electronAPI?.telechargerFichier) {
       return window.electronAPI.telechargerFichier(url, nomFichierParDefaut)
+    }
+
+    if (estMobile() && url) {
+      ouvrirUrl(url)
+      return { nom: nomFichierParDefaut, methode: 'ouverture' }
     }
 
     throw erreur

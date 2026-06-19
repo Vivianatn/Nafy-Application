@@ -54,11 +54,11 @@ echo "Demarrage Docker ..."
 docker compose -f docker-compose.raspberry.yml --env-file .env.local up -d --build
 
 echo "Attente MariaDB ..."
-sleep 8
+echo "Connexion au reseau vivian_default (MariaDB externe) ..."
 
 echo "Migrations Symfony ..."
-docker compose -f docker-compose.raspberry.yml exec -T web php bin/console doctrine:migrations:migrate --no-interaction --env=prod || true
-docker compose -f docker-compose.raspberry.yml exec -T web php bin/console cache:clear --env=prod
+docker compose -f docker-compose.raspberry.yml --env-file .env.local exec -T web php bin/console doctrine:migrations:migrate --no-interaction --env=prod || true
+docker compose -f docker-compose.raspberry.yml --env-file .env.local exec -T web php bin/console cache:clear --env=prod
 
 if [[ -n "$TAILSCALE_IP" ]]; then
   bash scripts/configure-tailscale-clients.sh "$TAILSCALE_IP"

@@ -1,31 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HOST="${NAFY_HOST:-symfony.mmi-troyes.fr}"
+HOST="${NAFY_HOST:-127.0.0.1}"
 PORT="${NAFY_PORT:-8319}"
 BASE="http://${HOST}:${PORT}"
-CONTAINER="${SYMFONY_CONTAINER:-symfony-web}"
-PROJECT_DIR="/var/www/nafy-application"
+WEB_CONTAINER="${NAFY_WEB_CONTAINER:-nafy-web}"
+DB_CONTAINER="${NAFY_DB_CONTAINER:-vivian-db-1}"
 
 echo "=== URL locale ==="
 echo "${BASE}"
 
 echo ""
-echo "=== Résolution DNS ==="
-getent hosts "$HOST" 2>/dev/null || true
-echo "Ajoutez dans C:\\Windows\\System32\\drivers\\etc\\hosts :"
-echo "  127.0.0.1 ${HOST}"
-
-echo ""
-echo "=== Docker ==="
-docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' 2>/dev/null | head -10
+echo "=== Docker (MariaDB + app) ==="
+docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' 2>/dev/null | grep -E 'NAMES|vivian-db|vivian-phpmyadmin|nafy-web' || true
 
 echo ""
 echo "=== Assets front (public/build) ==="
-if [[ -f "$(dirname "$0")/../public/build/app.js" ]]; then
+if [[ -f "$(dirname "$0")/../public/build/entrypoints.json" ]]; then
   echo "OK — build présent"
 else
-  echo "Manquant — lancez : npm run dev"
+  echo "Manquant — lancez : npm run build"
 fi
 
 echo ""
@@ -36,16 +30,23 @@ code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 "${BASE}/api/a
 echo "${BASE}/api/auth/session -> HTTP ${code}"
 
 echo ""
-echo "=== Symfony (conteneur ${CONTAINER}) ==="
-if docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
-  docker exec "$CONTAINER" bash -lc "cd ${PROJECT_DIR} && php bin/console dbal:run-sql 'SELECT DATABASE() AS base' 2>/dev/null | tail -1 || echo 'Connexion : ERREUR'"
-  docker exec "$CONTAINER" bash -lc "cd ${PROJECT_DIR} && php bin/console dbal:run-sql 'SELECT COUNT(*) AS kits FROM kit' 2>/dev/null || echo '(table kit absente)'"
-  docker exec "$CONTAINER" bash -lc "cd ${PROJECT_DIR} && php bin/console dbal:run-sql 'SELECT COUNT(*) AS villes FROM ville' 2>/dev/null || echo '(table ville absente)'"
+echo "=== Symfony (conteneur ${WEB_CONTAINER}) ==="
+if docker ps --format '{{.Names}}' | grep -qx "$WEB_CONTAINER"; then
+  docker exec "$WEB_CONTAINER" php bin/console dbal:run-sql 'SELECT DATABASE() AS base' --env=prod 2>/dev/null | tail -3 || echo 'Connexion : ERREUR'
+  docker exec "$WEB_CONTAINER" php bin/console dbal:run-sql 'SELECT COUNT(*) AS kits FROM kit' --env=prod 2>/dev/null || echo '(table kit absente)'
+  docker exec "$WEB_CONTAINER" php bin/console dbal:run-sql 'SELECT COUNT(*) AS villes FROM ville' --env=prod 2>/dev/null || echo '(table ville absente)'
 else
-  echo "Conteneur ${CONTAINER} absent — cd /buts4 && docker compose up -d"
+  echo "Conteneur ${WEB_CONTAINER} absent — docker compose -f docker-compose.raspberry.yml --env-file .env.local up -d"
 fi
 
 echo ""
-echo "Si kits/villes = 0, exécutez : bash scripts/setup-database.sh
+echo "=== MariaDB (${DB_CONTAINER}) ==="
+if docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
+  docker exec "$DB_CONTAINER" mariadb -uroot -pPASSWORD -e "SHOW DATABASES LIKE 'nafy-application';" 2>/dev/null || echo 'MariaDB : ERREUR'
+else
+  echo "Conteneur ${DB_CONTAINER} absent — cd ~ && docker compose up -d db"
+fi
+
 echo ""
-echo "Dans phpMyAdmin (http://127.0.0.1:8080), ouvrez la base « nafy-application » (pas symfony ni naty-application).""
+echo "Si kits/villes = 0 : bash scripts/setup-database.sh"
+echo "phpMyAdmin : http://127.0.0.1:9010 → base « nafy-application »"
