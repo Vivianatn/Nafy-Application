@@ -1,7 +1,16 @@
-<template>
+﻿<template>
   <header class="entete">
     <router-link :to="{ name: 'home' }" class="entete__logo">
-      Kamille
+      <img
+        v-if="organisateur.logoUrl"
+        :src="organisateur.logoUrl"
+        :alt="organisateur.nomMarque"
+        class="entete__logo-img"
+      />
+      <span class="entete__logo-texte">
+        <span class="entete__marque">{{ organisateur.nomMarque }}</span>
+        <span class="entete__entreprise">{{ organisateur.nomEntreprise }}</span>
+      </span>
     </router-link>
 
     <div v-if="session.utilisateur" class="entete__droite">
@@ -12,10 +21,24 @@
 </template>
 
 <script setup>
+import { onMounted, reactive } from 'vue'
 import MenuBurger from './MenuBurger.vue'
 import { useAuth } from '../composables/auth'
+import { chargerOrganisateur } from '../composables/organisateur'
 
 const { session, roleUtilisateur } = useAuth()
+
+const organisateur = reactive({
+  nomEntreprise: 'Nafy Bonine',
+  nomMarque: 'Kamille Events',
+  siret: '',
+  logoUrl: '/images/logo.svg',
+})
+
+onMounted(async () => {
+  const infos = await chargerOrganisateur()
+  Object.assign(organisateur, infos)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -39,11 +62,39 @@ const { session, roleUtilisateur } = useAuth()
   box-shadow: 0 1px 0 rgba(29, 29, 29, 0.06);
 
   &__logo {
-    font-weight: 400;
-    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
     color: $color-text;
+    text-decoration: none;
+  }
+
+  &__logo-img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  &__logo-texte {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.15;
+  }
+
+  &__marque {
     font-size: var(--fs-base);
-    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+
+  &__entreprise {
+    font-size: 10px;
+    color: rgba(29, 29, 29, 0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__droite {

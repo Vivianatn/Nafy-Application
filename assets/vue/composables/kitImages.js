@@ -8,7 +8,8 @@ const FICHIERS = {
   Ketura: 'ketura.jpg',
   Déborah: 'deborah.jpg',
   Sarah: 'sarah.jpg',
-  Ruth: 'ruth.jpg',
+  Rébecca: 'rebecca.jpg',
+  Ruth: 'rebecca.jpg',
 }
 
 export function imageKit(nom) {

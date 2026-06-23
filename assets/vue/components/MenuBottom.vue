@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <nav class="tabbar" aria-label="Navigation principale">
     <router-link
       v-for="onglet in onglets"
@@ -31,7 +31,7 @@ const onglets = [
     name: 'inventaire',
     label: 'Inventaire',
     to: { name: 'inventaire' },
-    routesActives: ['inventaire'],
+    routesActives: ['inventaire', 'vaisselle-detail', 'vaisselle-ajouter'],
     icone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>',
   },
   {

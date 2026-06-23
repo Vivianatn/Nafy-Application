@@ -3,6 +3,10 @@
     <h1 class="page-titre">Inventaire</h1>
     <p class="page-sous-titre">Voir les stocks par jour</p>
 
+    <router-link :to="{ name: 'vaisselle-ajouter' }" class="bouton bouton--secondaire inventaire__ajouter">
+      Ajouter une vaisselle
+    </router-link>
+
     <label class="filtre-date">
       <span class="filtre-date__libelle">Date</span>
       <input type="date" v-model="dateSelectionnee" :min="dateMin" class="filtre-date__champ" />
@@ -28,22 +32,24 @@
           class="carte"
           :style="{ '--carte-i': index }"
         >
-          <div class="carte__media">
-            <img
-              v-if="imageKit(kit.nom)"
-              :src="imageKit(kit.nom)"
-              :alt="kit.nom"
-              loading="lazy"
-              @error="onErreurImageKit"
-            />
-          </div>
-          <div class="carte__corps">
-            <p class="carte__nom">{{ kit.nom }}</p>
-            <p class="carte__stock" :class="classeStock(kit)">
-              <span class="carte__stock-valeur">{{ kit.quantiteDisponible }}</span>
-              <span class="carte__stock-libelle">disponible{{ kit.quantiteDisponible > 1 ? 's' : '' }}</span>
-            </p>
-          </div>
+          <router-link :to="{ name: 'vaisselle-detail', params: { id: kit.id } }" class="carte__lien">
+            <div class="carte__media">
+              <img
+                v-if="imageKit(kit.nom)"
+                :src="imageKit(kit.nom)"
+                :alt="kit.nom"
+                loading="lazy"
+                @error="onErreurImageKit"
+              />
+            </div>
+            <div class="carte__corps">
+              <p class="carte__nom">{{ kit.nom }}</p>
+              <p class="carte__stock" :class="classeStock(kit)">
+                <span class="carte__stock-valeur">{{ kit.quantiteDisponible }}</span>
+                <span class="carte__stock-libelle">disponible{{ kit.quantiteDisponible > 1 ? 's' : '' }}</span>
+              </p>
+            </div>
+          </router-link>
         </li>
       </ul>
 
@@ -187,6 +193,12 @@ onBeforeUnmount(() => {
 @use '../../styles/variables' as *;
 
 .inventaire {
+  &__ajouter {
+    display: inline-flex;
+    margin-bottom: $space-md;
+    text-decoration: none;
+  }
+
   &__contenu {
     position: relative;
 
@@ -301,8 +313,6 @@ onBeforeUnmount(() => {
 }
 
 .carte {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
   border: 1px solid rgba(204, 167, 97, 0.22);
   border-radius: calc($radius + 2px);
@@ -312,6 +322,14 @@ onBeforeUnmount(() => {
     border-color $transition,
     box-shadow $transition,
     transform $transition;
+
+  &__lien {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+  }
 
   @media (hover: hover) {
     &:hover {

@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth, utilisateurEstResponsable } from '../composables/auth'
 
 const routes = [
@@ -15,12 +15,6 @@ const routes = [
     meta: { guest: true },
   },
   {
-    path: '/reinitialiser-mot-de-passe',
-    name: 'reinitialiser-mot-de-passe',
-    component: () => import('../views/ReinitialiserMotDePasseView.vue'),
-    meta: { guest: true },
-  },
-  {
     path: '/',
     name: 'home',
     component: () => import('../views/AccueilView.vue'),
@@ -30,6 +24,19 @@ const routes = [
     path: '/inventaire',
     name: 'inventaire',
     component: () => import('../views/InventaireView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/inventaire/ajouter',
+    name: 'vaisselle-ajouter',
+    component: () => import('../views/KitDetailView.vue'),
+    props: { mode: 'create' },
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/inventaire/vaisselle/:id',
+    name: 'vaisselle-detail',
+    component: () => import('../views/KitDetailView.vue'),
     meta: { requiresAuth: true },
   },
   {

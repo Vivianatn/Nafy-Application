@@ -29,9 +29,17 @@ nettoyer_dist_electron() {
 
   echo "dist-electron appartient a root (build Docker). Nettoyage sudo..."
   if [[ "$EUID" -ne 0 ]]; then
-    sudo rm -rf dist-electron
-    sudo mkdir -p dist-electron
-    sudo chown -R "$(whoami):$(whoami)" dist-electron
+    if sudo -n rm -rf dist-electron 2>/dev/null; then
+      sudo -n mkdir -p dist-electron
+      sudo -n chown -R "$(whoami):$(whoami)" dist-electron
+    else
+      echo "Erreur : dist-electron appartient a root et sudo demande un mot de passe."
+      echo "Depuis PowerShell Windows :"
+      echo "  .\\scripts\\build-desktop.ps1 -BuildOnly"
+      echo "Ou dans WSL :"
+      echo "  sudo bash scripts/fix-host-permissions.sh"
+      exit 1
+    fi
   else
     rm -rf dist-electron
     mkdir -p dist-electron

@@ -22,8 +22,8 @@ security:
         - { path: ^/api/auth/connexion, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/deconnexion, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/session, roles: PUBLIC_ACCESS }
-        - { path: ^/api/auth/mot-de-passe-oublie, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/reinitialiser-mot-de-passe, roles: PUBLIC_ACCESS }
+        - { path: ^/api/organisateur, roles: PUBLIC_ACCESS }
         - { path: ^/api/secretaires, roles: ROLE_RESPONSABLE }
         - { path: ^/api/responsables, roles: ROLE_RESPONSABLE }
         - { path: ^/api, roles: ROLE_USER }

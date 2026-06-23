@@ -63,7 +63,11 @@ import { useHeuresRecuperation } from '../composables/heuresRecuperation'
 const props = defineProps({
   devisId: {
     type: Number,
-    required: true,
+    default: null,
+  },
+  evenementId: {
+    type: Number,
+    default: null,
   },
   heureInitiale: {
     type: String,
@@ -72,6 +76,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['heure-change'])
+
+const entiteId = computed(() => props.evenementId ?? props.devisId)
+const entiteType = computed(() => (props.evenementId ? 'evenement' : 'devis'))
 
 const { enregistrerHeure, formaterHeure } = useHeuresRecuperation()
 
@@ -128,9 +135,13 @@ async function persister(heure) {
   messageErreur.value = ''
 
   try {
-    const enregistree = await enregistrerHeure(props.devisId, heure)
+    const enregistree = await enregistrerHeure(entiteId.value, heure, entiteType.value)
     heureAffichee.value = enregistree
-    emit('heure-change', { devisId: props.devisId, heure: enregistree })
+    emit('heure-change', {
+      devisId: props.devisId,
+      evenementId: props.evenementId,
+      heure: enregistree,
+    })
   } catch {
     messageErreur.value = 'Impossible d\'enregistrer l\'heure.'
   } finally {

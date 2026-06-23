@@ -4,9 +4,9 @@
       <div class="connexion__carte">
         <header class="connexion__entete">
           <p class="connexion__marque">Kamille Events</p>
-          <h1 class="connexion__titre">Mot de passe oublié</h1>
+          <h1 class="connexion__titre">Réinitialiser le mot de passe</h1>
           <p class="connexion__sous-titre">
-            Indiquez votre email ou téléphone. Un lien vous sera envoyé si un compte existe.
+            Indiquez votre identifiant et choisissez un nouveau mot de passe (8 caractères minimum).
           </p>
         </header>
 
@@ -25,11 +25,25 @@
             <span v-if="erreurs.identifiant" class="champ__erreur">{{ erreurs.identifiant }}</span>
           </label>
 
+          <label class="champ">
+            Nouveau mot de passe
+            <input type="password" v-model="motDePasse" autocomplete="new-password" />
+            <span v-if="erreurs.motDePasse" class="champ__erreur">{{ erreurs.motDePasse }}</span>
+          </label>
+
+          <label class="champ">
+            Confirmation
+            <input type="password" v-model="confirmationMotDePasse" autocomplete="new-password" />
+            <span v-if="erreurs.confirmationMotDePasse" class="champ__erreur">{{ erreurs.confirmationMotDePasse }}</span>
+          </label>
+
           <button type="submit" class="bouton bouton--bloc" :disabled="envoiEnCours">
-            {{ envoiEnCours ? 'Envoi…' : 'Recevoir le lien' }}
+            {{ envoiEnCours ? 'Enregistrement…' : 'Enregistrer le mot de passe' }}
           </button>
 
-          <router-link :to="{ name: 'connexion' }" class="connexion__lien">Retour à la connexion</router-link>
+          <router-link :to="{ name: 'connexion' }" class="connexion__lien">
+            {{ messageSucces ? 'Se connecter' : 'Retour à la connexion' }}
+          </router-link>
         </form>
       </div>
     </Transition>
@@ -41,6 +55,8 @@ import { ref } from 'vue'
 import api from '../api'
 
 const identifiant = ref('')
+const motDePasse = ref('')
+const confirmationMotDePasse = ref('')
 const erreurs = ref({})
 const messageErreur = ref('')
 const messageSucces = ref('')
@@ -53,15 +69,20 @@ async function envoyer() {
   envoiEnCours.value = true
 
   try {
-    const { data } = await api.post('/auth/mot-de-passe-oublie', { identifiant: identifiant.value })
+    const { data } = await api.post('/auth/reinitialiser-mot-de-passe', {
+      identifiant: identifiant.value,
+      motDePasse: motDePasse.value,
+      confirmationMotDePasse: confirmationMotDePasse.value,
+    })
     messageSucces.value = data.message
-    identifiant.value = ''
+    motDePasse.value = ''
+    confirmationMotDePasse.value = ''
   } catch (error) {
     if (error.response?.status === 422) {
       erreurs.value = error.response.data.erreurs ?? {}
-      messageErreur.value = 'Veuillez corriger le champ indiqué.'
+      messageErreur.value = 'Veuillez corriger les champs en erreur.'
     } else {
-      messageErreur.value = 'Impossible d’envoyer la demande. Réessayez plus tard.'
+      messageErreur.value = 'Impossible de mettre à jour le mot de passe.'
     }
   } finally {
     envoiEnCours.value = false

@@ -52,39 +52,71 @@
 
         <Transition name="calendrier-detail">
           <div v-if="dateSelectionnee" class="calendrier__detail">
-          <h3 class="calendrier__detail-titre">{{ titreDateSelectionnee }}</h3>
-          <p v-if="evenementsJourSelectionne.length === 0" class="historique__etat">
-            Aucun événement ce jour-là.
-          </p>
-          <ul v-else class="historique">
-            <li
-              v-for="evenement in evenementsJourSelectionne"
-              :key="'evenement-' + evenement.id"
-              class="historique__item"
-            >
-              <div class="historique__entete">
-                <span class="historique__type">Événement</span>
-                <strong class="historique__numero">n°{{ libelleNumero(evenement) }}</strong>
-              </div>
-              <p class="historique__ligne">Créé le {{ formaterDateHeure(evenement.createdAt) }}</p>
-              <p v-if="evenement.dateReservation" class="historique__ligne">
-                Réservation le {{ formaterDate(evenement.dateReservation) }}
-              </p>
-              <HeureRecuperationVaisselle
-                :devis-id="evenement.id"
-                :heure-initiale="evenement.heureRecuperationVaisselle ?? ''"
-                @heure-change="mettreAJourHeureEvenement"
-              />
-              <button
-                type="button"
-                class="bouton bouton--secondaire historique__supprimer"
-                :disabled="suppressionEnCours === 'devis-' + evenement.id"
-                @click="supprimerCommande('devis', evenement.id, libelleNumero(evenement))"
+            <h3 class="calendrier__detail-titre">{{ titreDateSelectionnee }}</h3>
+
+            <p v-if="evenementsJourSelectionne.length === 0" class="historique__etat">
+              Aucun événement ce jour-là.
+            </p>
+            <ul v-else class="historique">
+              <li
+                v-for="item in evenementsJourSelectionne"
+                :key="item.sourceType + '-' + item.id"
+                class="historique__item"
               >
-                {{ suppressionEnCours === 'devis-' + evenement.id ? 'Suppression…' : 'Supprimer' }}
+                <div class="historique__entete">
+                  <span class="historique__type">{{ item.sourceType === 'devis' ? 'Devis' : 'Événement' }}</span>
+                  <strong class="historique__numero">
+                    {{ item.sourceType === 'devis' ? 'n°' + libelleNumero(item) : (item.titre || 'Sans titre') }}
+                  </strong>
+                </div>
+                <p v-if="item.sourceType === 'devis'" class="historique__ligne">
+                  Créé le {{ formaterDateHeure(item.createdAt) }}
+                </p>
+                <p v-if="item.adresseEvenement" class="historique__ligne">{{ item.adresseEvenement }}</p>
+                <p v-if="item.dateRentree" class="historique__ligne">
+                  Rentrée le {{ formaterDate(item.dateRentree) }}
+                </p>
+                <HeureRecuperationVaisselle
+                  v-if="item.sourceType === 'devis'"
+                  :devis-id="item.id"
+                  :heure-initiale="item.heureRecuperationVaisselle ?? ''"
+                  @heure-change="mettreAJourHeureEvenement"
+                />
+                <HeureRecuperationVaisselle
+                  v-else
+                  :evenement-id="item.id"
+                  :heure-initiale="item.heureRecuperationVaisselle ?? ''"
+                  @heure-change="mettreAJourHeureCalendrier"
+                />
+                <button
+                  type="button"
+                  class="bouton bouton--secondaire historique__supprimer"
+                  :disabled="suppressionEnCours === item.sourceType + '-' + item.id"
+                  @click="supprimerItemCalendrier(item)"
+                >
+                  {{ suppressionEnCours === item.sourceType + '-' + item.id ? 'Suppression…' : 'Supprimer' }}
+                </button>
+              </li>
+            </ul>
+
+            <form class="calendrier__ajout" @submit.prevent="creerEvenementCalendrier">
+              <h4 class="calendrier__ajout-titre">Ajouter un événement</h4>
+              <label class="champ">Titre
+                <input type="text" v-model.trim="nouvelEvenement.titre" placeholder="Ex. Mariage Dupont" />
+              </label>
+              <label class="champ">Adresse de l'événement
+                <input type="text" v-model.trim="nouvelEvenement.adresseEvenement" />
+              </label>
+              <label class="champ">Date de rentrée
+                <input type="date" v-model="nouvelEvenement.dateRentree" />
+              </label>
+              <label class="champ">Note
+                <textarea v-model.trim="nouvelEvenement.note" rows="2"></textarea>
+              </label>
+              <button type="submit" class="bouton bouton--bloc" :disabled="creationEvenementEnCours">
+                {{ creationEvenementEnCours ? 'Création…' : 'Ajouter au calendrier' }}
               </button>
-            </li>
-          </ul>
+            </form>
           </div>
         </Transition>
       </div>
@@ -150,7 +182,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api'
 import { telechargerPdfDevis, telechargerPdfFacture, messageTelechargement } from '../composables/telechargement'
@@ -166,7 +198,7 @@ const route = useRoute()
 const joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const nomsMois = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ]
 
 const aujourdHui = new Date()
@@ -206,6 +238,13 @@ function estAujourdHui(jour) {
 }
 
 const dateSelectionnee = ref(null)
+const nouvelEvenement = reactive({
+  titre: '',
+  adresseEvenement: '',
+  dateRentree: '',
+  note: '',
+})
+const creationEvenementEnCours = ref(false)
 
 function selectionnerJour(jour) {
   if (!jour) return
@@ -246,8 +285,9 @@ const factureEnCours = ref('')
 const telechargementEnCours = ref('')
 const devis = ref([])
 const factures = ref([])
+const evenementsCalendrier = ref([])
 
-const evenements = computed(() =>
+const evenementsDevis = computed(() =>
   devis.value.filter((item) => item.dateReservation),
 )
 
@@ -263,18 +303,27 @@ function cleDate(year, monthIndex, day) {
   return `${year}-${month}-${dayStr}`
 }
 
+function evenementsPourCle(cle) {
+  const calendrier = evenementsCalendrier.value
+    .filter((e) => e.dateReservation === cle)
+    .map((e) => ({ ...e, sourceType: 'calendrier' }))
+  const devisJour = evenementsDevis.value
+    .filter((e) => e.dateReservation === cle)
+    .map((e) => ({ ...e, sourceType: 'devis' }))
+  return [...calendrier, ...devisJour]
+}
+
 function aEvenement(jour) {
   if (!jour) return false
   const cle = cleDate(annee.value, mois.value, jour)
-  return evenements.value.some((evenement) => evenement.dateReservation === cle)
+  return evenementsPourCle(cle).length > 0
 }
 
 function heureJour(jour) {
   if (!jour) return ''
   const cle = cleDate(annee.value, mois.value, jour)
-  const evenementsDuJour = evenements.value.filter((e) => e.dateReservation === cle)
 
-  for (const evenement of evenementsDuJour) {
+  for (const evenement of evenementsPourCle(cle)) {
     if (evenement.heureRecuperationVaisselle) {
       return evenement.heureRecuperationVaisselle
     }
@@ -285,12 +334,20 @@ function heureJour(jour) {
 
 function mettreAJourHeureEvenement({ devisId, heure }) {
   const index = devis.value.findIndex((item) => item.id === devisId)
-  if (index === -1) {
-    return
-  }
+  if (index === -1) return
 
   devis.value[index] = {
     ...devis.value[index],
+    heureRecuperationVaisselle: heure,
+  }
+}
+
+function mettreAJourHeureCalendrier({ evenementId, heure }) {
+  const index = evenementsCalendrier.value.findIndex((item) => item.id === evenementId)
+  if (index === -1) return
+
+  evenementsCalendrier.value[index] = {
+    ...evenementsCalendrier.value[index],
     heureRecuperationVaisselle: heure,
   }
 }
@@ -302,7 +359,7 @@ const evenementsJourSelectionne = computed(() => {
     dateSelectionnee.value.getMonth(),
     dateSelectionnee.value.getDate(),
   )
-  return evenements.value.filter((evenement) => evenement.dateReservation === cle)
+  return evenementsPourCle(cle)
 })
 
 const titreDateSelectionnee = computed(() => {
@@ -315,20 +372,88 @@ const titreDateSelectionnee = computed(() => {
   })
 })
 
-async function chargerCommandes() {
+watch(dateSelectionnee, (date) => {
+  nouvelEvenement.titre = ''
+  nouvelEvenement.adresseEvenement = ''
+  nouvelEvenement.dateRentree = ''
+  nouvelEvenement.note = ''
+  if (!date) return
+})
+
+async function chargerDonnees() {
   chargement.value = true
   try {
-    const [reponseDevis, reponseFactures] = await Promise.all([
+    const [reponseDevis, reponseFactures, reponseEvenements] = await Promise.all([
       api.get('/devis'),
       api.get('/factures'),
+      api.get('/evenements'),
     ])
     devis.value = reponseDevis.data
     factures.value = reponseFactures.data
+    evenementsCalendrier.value = Array.isArray(reponseEvenements.data) ? reponseEvenements.data : []
   } catch {
     devis.value = []
     factures.value = []
+    evenementsCalendrier.value = []
   } finally {
     chargement.value = false
+  }
+}
+
+async function creerEvenementCalendrier() {
+  if (!dateSelectionnee.value) return
+
+  const cle = cleDate(
+    dateSelectionnee.value.getFullYear(),
+    dateSelectionnee.value.getMonth(),
+    dateSelectionnee.value.getDate(),
+  )
+
+  creationEvenementEnCours.value = true
+
+  try {
+    const { data } = await api.post('/evenements', {
+      titre: nouvelEvenement.titre,
+      adresseEvenement: nouvelEvenement.adresseEvenement,
+      dateReservation: cle,
+      dateRentree: nouvelEvenement.dateRentree || null,
+      note: nouvelEvenement.note,
+    })
+    evenementsCalendrier.value = [...evenementsCalendrier.value, data]
+    nouvelEvenement.titre = ''
+    nouvelEvenement.adresseEvenement = ''
+    nouvelEvenement.dateRentree = ''
+    nouvelEvenement.note = ''
+    notifier('Événement ajouté au calendrier.', 'succes')
+  } catch {
+    notifier('Impossible d\'ajouter l\'événement.', 'erreur')
+  } finally {
+    creationEvenementEnCours.value = false
+  }
+}
+
+async function supprimerItemCalendrier(item) {
+  if (item.sourceType === 'devis') {
+    await supprimerCommande('devis', item.id, libelleNumero(item))
+    return
+  }
+
+  const libelle = item.titre || 'cet événement'
+  if (!window.confirm(`Supprimer ${libelle} ?`)) {
+    return
+  }
+
+  const cle = `${item.sourceType}-${item.id}`
+  suppressionEnCours.value = cle
+
+  try {
+    await api.delete(`/evenements/${item.id}`)
+    evenementsCalendrier.value = evenementsCalendrier.value.filter((e) => e.id !== item.id)
+    notifier('Événement supprimé.', 'succes')
+  } catch {
+    notifier('La suppression a échoué.', 'erreur')
+  } finally {
+    suppressionEnCours.value = ''
   }
 }
 
@@ -344,7 +469,7 @@ async function supprimerCommande(type, id, numero) {
   try {
     const endpoint = type === 'devis' ? `/devis/${id}` : `/factures/${id}`
     await api.delete(endpoint)
-    await chargerCommandes()
+    await chargerDonnees()
     notifier(
       type === 'devis'
         ? `Le devis n°${numero} a bien été supprimé.`
@@ -377,7 +502,6 @@ async function telechargerCommande(commande) {
     if (erreur?.name === 'AbortError') {
       return
     }
-    console.error('Telechargement echoue', erreur)
     notifier('Le téléchargement a échoué. Vérifiez que vous êtes connecté.', 'erreur')
   } finally {
     telechargementEnCours.value = ''
@@ -394,7 +518,7 @@ async function creerFactureDepuisDevis(devisId, numeroDevis) {
 
   try {
     const { data } = await api.post(`/devis/${devisId}/facture`)
-    await chargerCommandes()
+    await chargerDonnees()
 
     const dateHeure = formaterDateHeure(data.createdAt)
     const libelleFacture = data.numero || String(data.id)
@@ -412,7 +536,7 @@ async function creerFactureDepuisDevis(devisId, numeroDevis) {
 }
 
 onMounted(async () => {
-  await chargerCommandes()
+  await chargerDonnees()
 
   if (route.query.section === 'historique') {
     await nextTick()
@@ -588,6 +712,20 @@ onMounted(async () => {
     margin-bottom: $space-md;
     text-transform: capitalize;
   }
+
+  &__ajout {
+    margin-top: $space-lg;
+    padding-top: $space-md;
+    border-top: 1px solid rgba(204, 167, 97, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+  }
+
+  &__ajout-titre {
+    font-size: var(--fs-base);
+    margin-bottom: $space-xs;
+  }
 }
 
 .calendrier-detail-enter-active,
@@ -608,7 +746,7 @@ onMounted(async () => {
 
 .calendrier-detail-enter-to,
 .calendrier-detail-leave-from {
-  max-height: 400px;
+  max-height: 800px;
 }
 
 .historique {
@@ -631,9 +769,6 @@ onMounted(async () => {
   &__item {
     padding-bottom: $space-md;
     border-bottom: 1px solid $color-border;
-    transition:
-      border-color $transition,
-      background-color $transition;
 
     &:last-child {
       border-bottom: 0;
@@ -641,12 +776,6 @@ onMounted(async () => {
     }
   }
 
-  &__item--aujourdhui {
-    padding-left: $space-xs;
-    border-left: 2px solid $color-gold;
-  }
-
-  // Section « Historique des commandes » — cartes
   &--commandes {
     gap: $space-lg;
 
@@ -661,10 +790,6 @@ onMounted(async () => {
       background: linear-gradient(145deg, $color-bg 0%, rgba(204, 167, 97, 0.04) 100%);
       box-shadow: $shadow-soft;
       overflow: hidden;
-      transition:
-        transform $transition,
-        box-shadow $transition,
-        border-color $transition;
 
       &::before {
         content: '';
@@ -680,27 +805,11 @@ onMounted(async () => {
       &:hover {
         transform: translateY(-2px);
         border-color: rgba(204, 167, 97, 0.65);
-        box-shadow: $shadow-soft;
       }
     }
 
     .historique__carte--aujourdhui {
       border-color: $color-gold;
-      box-shadow:
-        0 0 0 2px $color-gold-ghost,
-        $shadow-soft;
-
-      &::before {
-        opacity: 1;
-        width: 6px;
-      }
-
-      .historique__numero::after {
-        content: ' · Aujourd\'hui';
-        font-weight: 400;
-        font-size: var(--fs-petit);
-        color: $color-gold-dark;
-      }
     }
 
     .historique__entete {
@@ -710,13 +819,11 @@ onMounted(async () => {
       gap: $space-sm;
       flex-wrap: wrap;
       padding-bottom: $space-sm;
-      margin-bottom: 0;
       border-bottom: 1px solid rgba(204, 167, 97, 0.2);
     }
 
     .historique__type {
       font-size: var(--fs-petit);
-      font-weight: 400;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       padding: 4px $space-sm;
@@ -724,29 +831,12 @@ onMounted(async () => {
 
       &--devis {
         background: rgba(204, 167, 97, 0.28);
-        color: $color-text;
       }
 
       &--facture {
         background: rgba(46, 125, 50, 0.14);
         color: $color-success;
       }
-    }
-
-    .historique__numero {
-      font-size: var(--fs-base);
-      color: $color-text;
-    }
-
-    .historique__corps {
-      display: flex;
-      flex-direction: column;
-      gap: $space-xs;
-    }
-
-    .historique__ligne {
-      margin-top: 0;
-      color: $color-muted;
     }
 
     .historique__actions {
@@ -761,15 +851,10 @@ onMounted(async () => {
       flex: 1;
       max-width: none;
       height: var(--btn-h);
-      font-size: var(--fs-base);
 
       &--facture {
         background: $color-gold;
         border: 0;
-
-        &:hover {
-          background: $color-gold-dark;
-        }
       }
     }
 
@@ -788,16 +873,11 @@ onMounted(async () => {
     margin-bottom: $space-xs;
   }
 
-  &__type {
-    font-size: var(--fs-base);
-  }
-
   &__supprimer {
     margin-top: $space-sm;
     width: 100%;
     max-width: none;
     height: var(--btn-h);
-    font-size: var(--fs-base);
   }
 
   &__actions {
@@ -811,27 +891,12 @@ onMounted(async () => {
     width: 100%;
     max-width: none;
     height: var(--btn-h);
-    font-size: var(--fs-base);
-
-    &--lien {
-      text-decoration: none;
-      box-sizing: border-box;
-    }
-  }
-
-  &__numero {
-    font-size: var(--fs-base);
-    font-weight: 400;
   }
 
   &__ligne {
     font-size: var(--fs-base);
     color: $color-text;
     margin-top: $space-xs;
-
-    &--heure {
-      color: $color-gold-dark;
-    }
   }
 }
 </style>

@@ -59,6 +59,15 @@
       </section>
 
       <section class="form-section">
+        <h2 class="form-section__titre">Événement</h2>
+        <label class="champ">Rattacher à un événement existant
+          <select v-model="evenementSelectionneId">
+            <option value="">— Aucun —</option>
+            <option v-for="evt in evenementsDisponibles" :key="evt.id" :value="String(evt.id)">
+              {{ libelleEvenement(evt) }}
+            </option>
+          </select>
+        </label>
         <label class="champ">Adresse de l'événement<span class="obligatoire">*</span>
           <input type="text" v-model.trim="adresseEvenement" />
           <span v-if="erreurs.adresseEvenement" class="champ__erreur">{{ erreurs.adresseEvenement }}</span>
@@ -221,7 +230,7 @@ import { computed, onMounted, reactive, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { calculerPrix, formaterPrix } from '../composables/calculPrix'
-import { formaterDateHeure } from '../composables/date'
+import { formaterDate, formaterDateHeure } from '../composables/date'
 import { imageKit, onErreurImageKit } from '../composables/kitImages'
 import { useNotification } from '../composables/notification'
 import RechercheVille from './RechercheVille.vue'
@@ -250,6 +259,8 @@ const deuxiemeClientActif = ref(false)
 
 const adresseEvenement = ref('')
 const dateReservation = ref('')
+const evenementsDisponibles = ref([])
+const evenementSelectionneId = ref('')
 const kits = ref([])
 const villes = ref([])
 const kitsActifs = reactive({})
@@ -293,6 +304,22 @@ const prix = computed(() =>
     avecCaution: props.type === 'devis',
   }),
 )
+
+function libelleEvenement(evt) {
+  const titre = evt.titre || evt.adresseEvenement || 'Événement'
+  const date = evt.dateReservation ? formaterDate(evt.dateReservation) : ''
+  return date ? `${titre} — ${date}` : titre
+}
+
+function appliquerEvenement(evt) {
+  if (!evt) return
+  adresseEvenement.value = evt.adresseEvenement || ''
+  dateReservation.value = evt.dateReservation || ''
+  dateRentree.value = evt.dateRentree || ''
+  if (evt.note && !noteCommande.value) {
+    noteCommande.value = evt.note
+  }
+}
 
 function toggleKit(kitId) {
   kitsActifs[kitId] = !kitsActifs[kitId]
@@ -451,16 +478,25 @@ async function envoyer() {
 
 onMounted(async () => {
   try {
-    const [reponseKits, reponseVilles] = await Promise.all([
+    const [reponseKits, reponseVilles, reponseEvenements] = await Promise.all([
       api.get('/kits'),
       api.get('/villes'),
+      api.get('/evenements'),
     ])
     kits.value = reponseKits.data
     villes.value = reponseVilles.data
+    evenementsDisponibles.value = Array.isArray(reponseEvenements.data) ? reponseEvenements.data : []
   } catch {
     kits.value = []
     villes.value = []
+    evenementsDisponibles.value = []
   }
+})
+
+watch(evenementSelectionneId, (id) => {
+  if (!id) return
+  const evt = evenementsDisponibles.value.find((item) => String(item.id) === id)
+  appliquerEvenement(evt)
 })
 
 watch(villeSelectionneeId, (id) => {

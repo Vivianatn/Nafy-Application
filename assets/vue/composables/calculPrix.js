@@ -13,5 +13,8 @@ export function calculerPrix({ totalKits, livraison, km, vaisselleANettoyer, ave
 }
 
 export function formaterPrix(valeur) {
-  return Number(valeur || 0).toFixed(2)
+  return new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(valeur || 0))
 }

@@ -1,0 +1,5 @@
+parameters:
+    organisateur.nom_entreprise: 'Nafy Bonine'
+    organisateur.nom_marque: 'Kamille Events'
+    organisateur.siret: '912 345 678 00012'
+    organisateur.logo_fichier: 'logo.svg'

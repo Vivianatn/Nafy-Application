@@ -104,30 +104,6 @@ class AuthController extends AbstractController
         ]);
     }
 
-    #[Route('/api/auth/mot-de-passe-oublie', name: 'api_auth_mot_de_passe_oublie', methods: ['POST'])]
-    public function motDePasseOublie(Request $request, MotDePasseOublieService $motDePasseOublieService): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-
-        if (!is_array($data)) {
-            return $this->json(['message' => 'Corps de requête JSON invalide.'], 400);
-        }
-
-        $identifiant = trim((string) ($data['identifiant'] ?? ''));
-
-        if ($identifiant === '') {
-            return $this->json([
-                'erreurs' => ['identifiant' => 'Indiquez votre email ou numéro de téléphone.'],
-            ], 422);
-        }
-
-        $motDePasseOublieService->demanderReinitialisation($identifiant);
-
-        return $this->json([
-            'message' => 'Si un compte correspond à cet identifiant, un email de réinitialisation a été envoyé.',
-        ]);
-    }
-
     #[Route('/api/auth/reinitialiser-mot-de-passe', name: 'api_auth_reinitialiser_mot_de_passe', methods: ['POST'])]
     public function reinitialiserMotDePasse(Request $request, MotDePasseOublieService $motDePasseOublieService): JsonResponse
     {
@@ -137,17 +113,11 @@ class AuthController extends AbstractController
             return $this->json(['message' => 'Corps de requête JSON invalide.'], 400);
         }
 
-        $jeton = trim((string) ($data['jeton'] ?? ''));
+        $identifiant = trim((string) ($data['identifiant'] ?? ''));
         $motDePasse = (string) ($data['motDePasse'] ?? '');
         $confirmation = (string) ($data['confirmationMotDePasse'] ?? '');
 
-        if ($jeton === '') {
-            return $this->json([
-                'erreurs' => ['jeton' => 'Lien de réinitialisation invalide.'],
-            ], 422);
-        }
-
-        $erreurs = $motDePasseOublieService->reinitialiserMotDePasse($jeton, $motDePasse, $confirmation);
+        $erreurs = $motDePasseOublieService->reinitialiserMotDePasse($identifiant, $motDePasse, $confirmation);
 
         if ($erreurs !== []) {
             return $this->json(['erreurs' => $erreurs], 422);

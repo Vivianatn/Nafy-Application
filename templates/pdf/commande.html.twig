@@ -16,6 +16,22 @@
             border-bottom: 2px solid #cca761;
             padding-bottom: 12px;
             margin-bottom: 18px;
+            display: table;
+            width: 100%;
+        }
+        .entete__logo-cell {
+            display: table-cell;
+            width: 80px;
+            vertical-align: middle;
+            padding-right: 12px;
+        }
+        .entete__logo-cell img {
+            max-width: 72px;
+            max-height: 48px;
+        }
+        .entete__texte {
+            display: table-cell;
+            vertical-align: middle;
         }
         .entete h1 {
             margin: 0 0 4px;
@@ -105,8 +121,19 @@
 </head>
 <body>
     <div class="entete">
-        <h1>{{ titreDocument }} n°{{ numero }}</h1>
-        <div class="meta">Kamille Events — Créé le {{ createdAt|date('d/m/Y à H:i') }}</div>
+        {% if logoBase64 %}
+            <div class="entete__logo-cell">
+                <img src="{{ logoBase64 }}" alt="{{ nomMarque }}">
+            </div>
+        {% endif %}
+        <div class="entete__texte">
+            <h1>{{ titreDocument }} n°{{ numero }}</h1>
+            <div class="meta">
+                {{ nomEntreprise }} — {{ nomMarque }}<br>
+                SIRET : {{ siret }}<br>
+                Créé le {{ createdAt|date('d/m/Y à H:i') }}
+            </div>
+        </div>
     </div>
 
     {% if clients is not empty %}

@@ -19,8 +19,12 @@ export function useHeuresRecuperation() {
     return `${h} h ${m}`
   }
 
-  async function enregistrerHeure(devisId, heure) {
-    const { data } = await api.patch(`/devis/${devisId}/heure-recuperation`, {
+  async function enregistrerHeure(entiteId, heure, type = 'devis') {
+    const endpoint = type === 'evenement'
+      ? `/evenements/${entiteId}/heure-recuperation`
+      : `/devis/${entiteId}/heure-recuperation`
+
+    const { data } = await api.patch(endpoint, {
       heure: heure || '',
     })
 

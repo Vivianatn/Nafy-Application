@@ -6,7 +6,15 @@
     <Transition name="connexion-carte" appear>
       <div class="connexion__carte">
         <header class="connexion__entete">
-          <p class="connexion__marque">Kamille Events</p>
+          <img
+            v-if="organisateur.logoUrl"
+            :src="organisateur.logoUrl"
+            :alt="organisateur.nomMarque"
+            class="connexion__logo"
+          />
+          <p class="connexion__marque">{{ organisateur.nomMarque }}</p>
+          <p class="connexion__entreprise">{{ organisateur.nomEntreprise }}</p>
+          <p v-if="organisateur.siret" class="connexion__siret">SIRET {{ organisateur.siret }}</p>
           <h1 class="connexion__titre">Connexion</h1>
           <p class="connexion__sous-titre">Accès réservé aux secrétaires et responsables</p>
         </header>
@@ -48,7 +56,7 @@
           </button>
 
           <router-link :to="{ name: 'mot-de-passe-oublie' }" class="connexion__lien">
-            Mot de passe oublié ?
+            Réinitialiser le mot de passe
           </router-link>
         </form>
       </div>
@@ -57,20 +65,32 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/auth'
+import { chargerOrganisateur } from '../composables/organisateur'
 
 const route = useRoute()
 const router = useRouter()
 const { connecter } = useAuth()
 
+const CLE_RESTER_CONNECTE = 'kamille_rester_connecte'
+const CLE_IDENTIFIANT = 'kamille_identifiant'
+const CLE_MOT_DE_PASSE = 'kamille_mot_de_passe'
+
 const identifiant = ref('')
 const motDePasse = ref('')
-const resterConnecte = ref(localStorage.getItem('kamille_rester_connecte') === '1')
+const resterConnecte = ref(localStorage.getItem(CLE_RESTER_CONNECTE) === '1')
 const erreurs = ref({})
 const messageErreur = ref('')
 const envoiEnCours = ref(false)
+
+const organisateur = reactive({
+  nomEntreprise: 'Nafy Bonine',
+  nomMarque: 'Kamille Events',
+  siret: '',
+  logoUrl: '/images/logo.svg',
+})
 
 async function envoyer() {
   erreurs.value = {}
@@ -90,7 +110,15 @@ async function envoyer() {
 
   try {
     await connecter(identifiant.value, motDePasse.value, resterConnecte.value)
-    localStorage.setItem('kamille_rester_connecte', resterConnecte.value ? '1' : '0')
+    localStorage.setItem(CLE_RESTER_CONNECTE, resterConnecte.value ? '1' : '0')
+
+    if (resterConnecte.value) {
+      localStorage.setItem(CLE_IDENTIFIANT, identifiant.value)
+      localStorage.setItem(CLE_MOT_DE_PASSE, motDePasse.value)
+    } else {
+      localStorage.removeItem(CLE_IDENTIFIANT)
+      localStorage.removeItem(CLE_MOT_DE_PASSE)
+    }
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     router.replace(redirect)
   } catch (error) {
@@ -109,6 +137,16 @@ async function envoyer() {
     envoiEnCours.value = false
   }
 }
+
+onMounted(async () => {
+  const infos = await chargerOrganisateur()
+  Object.assign(organisateur, infos)
+
+  if (localStorage.getItem(CLE_RESTER_CONNECTE) === '1') {
+    identifiant.value = localStorage.getItem(CLE_IDENTIFIANT) || ''
+    motDePasse.value = localStorage.getItem(CLE_MOT_DE_PASSE) || ''
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -168,12 +206,32 @@ async function envoyer() {
     text-align: center;
   }
 
+  &__logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin: 0 auto $space-sm;
+    display: block;
+  }
+
   &__marque {
-    font-size: var(--fs-petit);
-    letter-spacing: 0.18em;
+    font-size: var(--fs-base);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    color: $color-text;
+    margin-bottom: 2px;
+  }
+
+  &__entreprise {
+    font-size: var(--fs-petit);
     color: $color-muted;
     margin-bottom: $space-xs;
+  }
+
+  &__siret {
+    font-size: 11px;
+    color: $color-muted;
+    margin-bottom: $space-sm;
   }
 
   &__titre {

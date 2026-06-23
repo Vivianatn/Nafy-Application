@@ -29,7 +29,7 @@ class SeedKitsCommand extends Command
         'Ketura',
         'Déborah',
         'Sarah',
-        'Ruth',
+        'Rébecca',
     ];
 
     public function __construct(

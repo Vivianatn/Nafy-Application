@@ -13,6 +13,7 @@ class CommandePdfGenerator
 {
     public function __construct(
         private readonly Environment $twig,
+        private readonly OrganisateurInfo $organisateurInfo,
     ) {
     }
 
@@ -96,7 +97,7 @@ class CommandePdfGenerator
         $html = $this->twig->render('pdf/commande.html.twig', array_merge($donnees, [
             'type' => $type,
             'titreDocument' => $type === 'devis' ? 'Devis' : 'Facture',
-        ]));
+        ], $this->organisateurInfo->pourPdf()));
 
         $options = new Options();
         $options->set('isRemoteEnabled', false);

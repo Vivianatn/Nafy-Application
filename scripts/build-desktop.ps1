@@ -22,6 +22,23 @@ function Test-IsUncPath {
     return $Path -match '^\\\\'
 }
 
+function Repair-WslPermissions {
+    if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+        return
+    }
+
+    $wslUser = (wsl.exe -d Ubuntu -- whoami 2>$null).Trim()
+    if (-not $wslUser) {
+        return
+    }
+
+    Write-Host "Correction des droits WSL (dist-electron / node_modules)..." -ForegroundColor DarkGray
+    $fixCmd = @"
+cd $WslProject && rm -rf dist-electron && mkdir -p dist-electron && chown -R ${wslUser}:${wslUser} dist-electron node_modules package-lock.json 2>/dev/null || true
+"@
+    wsl.exe -d Ubuntu -u root -- bash -lc $fixCmd | Out-Null
+}
+
 function Invoke-WslBuild {
     if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
         throw "WSL requis. Installez Ubuntu depuis le Microsoft Store."
@@ -29,6 +46,8 @@ function Invoke-WslBuild {
 
     Write-Host "Build via WSL (chemin UNC non supporte par npm Windows)..." -ForegroundColor Cyan
     Write-Host ""
+
+    Repair-WslPermissions
 
     $buildCmd = "cd $WslProject && bash scripts/build-desktop.sh win"
     wsl.exe -d Ubuntu -- bash -lc $buildCmd
@@ -98,6 +117,37 @@ $doRun = (-not $BuildOnly)
 
 if ($doBuild) {
     Invoke-WslBuild
+}
+
+if ($BuildOnly) {
+    $source = Get-SourceUnpacked
+    $installerCandidates = @(
+        (Join-Path $Root "dist-electron"),
+        "\\wsl.localhost\Ubuntu\buts4\www\nafy-application\dist-electron"
+    )
+
+    Write-Host ""
+    Write-Host "=== Application prete a recuperer ===" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Executable Windows (dossier portable) :" -ForegroundColor Cyan
+    Write-Host "  $source\$ExeName"
+    Write-Host ""
+    Write-Host "Depuis l'Explorateur Windows, ouvrez :" -ForegroundColor DarkGray
+    Write-Host "  \\wsl.localhost\Ubuntu\buts4\www\nafy-application\dist-electron\win-unpacked"
+    Write-Host ""
+    Write-Host "Pour copier et lancer automatiquement :" -ForegroundColor DarkGray
+    Write-Host "  .\scripts\build-desktop.ps1 -RunOnly"
+    Write-Host "  (copie vers $LocalApp)"
+    Write-Host ""
+
+    foreach ($dir in $installerCandidates) {
+        $setup = Get-ChildItem -Path $dir -Filter "*Setup*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($setup) {
+            Write-Host "Installateur NSIS :" -ForegroundColor Cyan
+            Write-Host "  $($setup.FullName)"
+            break
+        }
+    }
 }
 
 if ($doRun) {

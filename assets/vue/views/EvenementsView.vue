@@ -42,15 +42,15 @@
           <ul class="evenements__timeline">
             <li
               v-for="(evenement, index) in groupe.items"
-              :key="evenement.id"
+              :key="evenement.sourceType + '-' + evenement.id"
               class="carte"
               :class="classeCarte(evenement)"
               :style="{ '--carte-i': index }"
             >
               <article class="carte__corps">
                 <div class="carte__entete">
-                  <span class="carte__type">Devis</span>
-                  <strong class="carte__numero">n°{{ libelleNumero(evenement) }}</strong>
+                  <span class="carte__type">{{ evenement.sourceType === 'devis' ? 'Devis' : 'Événement' }}</span>
+                  <strong class="carte__numero">{{ libelleEntete(evenement) }}</strong>
                 </div>
                 <dl class="carte__infos">
                   <div class="carte__ligne">
@@ -87,15 +87,15 @@
       <ul v-else class="evenements__timeline evenements__timeline--plat">
         <li
           v-for="(evenement, index) in evenementsTries"
-          :key="evenement.id"
+          :key="evenement.sourceType + '-' + evenement.id"
           class="carte"
           :class="classeCarte(evenement)"
           :style="{ '--carte-i': index }"
         >
           <article class="carte__corps">
             <div class="carte__entete">
-              <span class="carte__type">Devis</span>
-              <strong class="carte__numero">n°{{ libelleNumero(evenement) }}</strong>
+              <span class="carte__type">{{ evenement.sourceType === 'devis' ? 'Devis' : 'Événement' }}</span>
+              <strong class="carte__numero">{{ libelleEntete(evenement) }}</strong>
             </div>
             <dl class="carte__infos">
               <div class="carte__ligne">
@@ -144,12 +144,20 @@ const { formaterHeureLongue } = useHeuresRecuperation()
 
 const ordre = ref('reservation-asc')
 const devis = ref([])
+const evenementsCalendrier = ref([])
 const chargement = ref(true)
 const erreur = ref('')
 
-const evenements = computed(() =>
-  devis.value.filter((item) => item.dateReservation),
-)
+const evenements = computed(() => {
+  const depuisDevis = devis.value
+    .filter((item) => item.dateReservation)
+    .map((item) => ({ ...item, sourceType: 'devis' }))
+  const depuisCalendrier = evenementsCalendrier.value.map((item) => ({
+    ...item,
+    sourceType: 'calendrier',
+  }))
+  return [...depuisDevis, ...depuisCalendrier]
+})
 
 const afficherParDate = computed(() =>
   ordre.value === 'reservation-asc' || ordre.value === 'reservation-desc',
@@ -254,6 +262,13 @@ function libelleNumero(evenement) {
   return evenement.numero || String(evenement.id)
 }
 
+function libelleEntete(evenement) {
+  if (evenement.sourceType === 'calendrier') {
+    return evenement.titre || 'Sans titre'
+  }
+  return `n°${libelleNumero(evenement)}`
+}
+
 function formaterPrix(prix) {
   if (prix === null || prix === undefined || prix === '') {
     return null
@@ -275,10 +290,15 @@ async function chargerEvenements() {
   erreur.value = ''
 
   try {
-    const { data } = await api.get('/devis')
-    devis.value = Array.isArray(data) ? data : []
+    const [reponseDevis, reponseCalendrier] = await Promise.all([
+      api.get('/devis'),
+      api.get('/evenements'),
+    ])
+    devis.value = Array.isArray(reponseDevis.data) ? reponseDevis.data : []
+    evenementsCalendrier.value = Array.isArray(reponseCalendrier.data) ? reponseCalendrier.data : []
   } catch {
     devis.value = []
+    evenementsCalendrier.value = []
     erreur.value = 'Impossible de charger les événements.'
   } finally {
     chargement.value = false
