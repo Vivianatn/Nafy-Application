@@ -1,5 +1,7 @@
 import api from '../api'
 import { Capacitor } from '@capacitor/core'
+import { Filesystem, Directory } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 
 const TAILLE_MAX_IPC_OCTETS = 40 * 1024 * 1024
 
@@ -22,13 +24,21 @@ function estIOS() {
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }
 
+function estAndroid() {
+  if (typeof navigator === 'undefined') {
+    return false
+  }
+
+  return /Android/i.test(navigator.userAgent) || Capacitor.getPlatform() === 'android'
+}
+
 function estMobile() {
   if (typeof navigator === 'undefined') {
     return false
   }
 
   return estIOS()
-    || /Android/i.test(navigator.userAgent)
+    || estAndroid()
     || Capacitor.isNativePlatform()
     || (navigator.maxTouchPoints > 0 && window.innerWidth < 900)
 }
@@ -40,15 +50,18 @@ export function urlTelechargementMemeOrigine(cheminApi) {
 
   const base = String(api.defaults.baseURL || '/api').replace(/\/$/, '')
 
+  let url
+
   if (base.startsWith('http')) {
-    return `${base}${segment}`
+    url = `${base}${segment}`
+  } else if (typeof window !== 'undefined') {
+    url = new URL(relatif, window.location.origin).href
+  } else {
+    url = relatif
   }
 
-  if (typeof window !== 'undefined') {
-    return new URL(relatif, window.location.origin).href
-  }
-
-  return relatif
+  const separateur = url.includes('?') ? '&' : '?'
+  return `${url}${separateur}download=${Date.now()}`
 }
 
 export function urlPdfDevis(id) {
@@ -81,36 +94,49 @@ function nomDepuisEntete(contentDisposition, fallback) {
   return fallback
 }
 
+function blobPdf(source) {
+  if (source instanceof Blob && source.type === 'application/pdf') {
+    return source
+  }
+
+  return new Blob([source], { type: 'application/pdf' })
+}
+
+function blobVersBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = String(reader.result || '')
+      const virgule = result.indexOf(',')
+      resolve(virgule >= 0 ? result.slice(virgule + 1) : result)
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('Lecture du fichier impossible.'))
+    reader.readAsDataURL(blob)
+  })
+}
+
 function telechargerBlob(blob, nomFichier) {
-  const url = URL.createObjectURL(blob)
+  const pdf = blobPdf(blob)
+  const url = URL.createObjectURL(pdf)
   const lien = document.createElement('a')
   lien.href = url
   lien.download = nomFichier
   lien.rel = 'noopener'
+  lien.style.display = 'none'
   document.body.appendChild(lien)
   lien.click()
   lien.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
-}
-
-function ouvrirUrl(url) {
-  const lien = document.createElement('a')
-  lien.href = url
-  lien.target = '_blank'
-  lien.rel = 'noopener noreferrer'
-  document.body.appendChild(lien)
-  lien.click()
-  lien.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 async function partagerFichier(blob, nomFichier) {
-  if (!navigator.share || !navigator.canShare) {
+  if (!navigator.share) {
     return false
   }
 
-  const file = new File([blob], nomFichier, { type: blob.type || 'application/pdf' })
+  const file = new File([blobPdf(blob)], nomFichier, { type: 'application/pdf' })
 
-  if (!navigator.canShare({ files: [file] })) {
+  if (navigator.canShare && !navigator.canShare({ files: [file] })) {
     return false
   }
 
@@ -118,23 +144,66 @@ async function partagerFichier(blob, nomFichier) {
   return true
 }
 
-async function telechargerSurMobile(blob, nomFichier, urlFallback) {
-  try {
-    if (await partagerFichier(blob, nomFichier)) {
-      return { nom: nomFichier, methode: 'share' }
-    }
-  } catch (erreur) {
-    if (erreur?.name === 'AbortError') {
-      throw erreur
+function declencherTelechargementAndroid(url) {
+  return new Promise((resolve) => {
+    const lien = document.createElement('a')
+    lien.href = url
+    lien.rel = 'noopener'
+    lien.style.display = 'none'
+    document.body.appendChild(lien)
+    lien.click()
+    lien.remove()
+    setTimeout(resolve, 400)
+  })
+}
+
+async function enregistrerViaCapacitor(blob, nomFichier) {
+  const base64 = await blobVersBase64(blobPdf(blob))
+
+  const cheminCache = `pdf/${nomFichier}`
+
+  await Filesystem.writeFile({
+    path: cheminCache,
+    data: base64,
+    directory: Directory.Cache,
+    recursive: true,
+  })
+
+  const { uri } = await Filesystem.getUri({
+    directory: Directory.Cache,
+    path: cheminCache,
+  })
+
+  await Share.share({
+    title: nomFichier,
+    url: uri,
+    dialogTitle: 'Enregistrer le PDF',
+  })
+
+  return { nom: nomFichier, methode: 'share' }
+}
+
+async function forcerTelechargement(blob, nomFichier) {
+  const pdf = blobPdf(blob)
+
+  if (Capacitor.getPlatform() === 'ios') {
+    return enregistrerViaCapacitor(pdf, nomFichier)
+  }
+
+  if (estMobile()) {
+    try {
+      if (await partagerFichier(pdf, nomFichier)) {
+        return { nom: nomFichier, methode: 'share' }
+      }
+    } catch (erreur) {
+      if (erreur?.name === 'AbortError') {
+        throw erreur
+      }
     }
   }
 
-  if (urlFallback) {
-    ouvrirUrl(urlFallback)
-    return { nom: nomFichier, methode: 'ouverture' }
-  }
+  telechargerBlob(pdf, nomFichier)
 
-  telechargerBlob(blob, nomFichier)
   return { nom: nomFichier, methode: 'blob' }
 }
 
@@ -155,12 +224,12 @@ export function messageTelechargement(resultat) {
   const nom = resultat?.nom || 'document.pdf'
 
   switch (resultat?.methode) {
+    case 'fichier':
+      return `PDF enregistré dans ${resultat.chemin || 'Téléchargements'}.`
     case 'share':
-      return `Document prêt : ${nom}. Enregistrez-le via le menu Partager.`
-    case 'ouverture':
-      return estIOS()
-        ? `Document ouvert : ${nom}. Touchez Partager puis « Enregistrer dans Fichiers ».`
-        : `Document ouvert : ${nom}. Enregistrez-le depuis le menu de votre navigateur.`
+      return estAndroid()
+        ? `Choisissez « Enregistrer dans Téléchargements » ou une application de fichiers pour ${nom}.`
+        : `Document prêt : ${nom}. Touchez « Enregistrer dans Fichiers » dans le menu Partager.`
     default:
       return `Document téléchargé : ${nom}`
   }
@@ -171,7 +240,10 @@ export async function telechargerDocument(cheminApi, nomFichierParDefaut) {
   const url = urlTelechargementMemeOrigine(cheminApi)
 
   try {
-    const reponse = await api.get(cheminApiRelatif, { responseType: 'blob' })
+    const reponse = await api.get(cheminApiRelatif, {
+      responseType: 'blob',
+      params: { download: Date.now() },
+    })
     const type = String(reponse.headers['content-type'] || reponse.data?.type || '')
 
     if (reponse.status !== 200 || !(reponse.data instanceof Blob)) {
@@ -187,30 +259,24 @@ export async function telechargerDocument(cheminApi, nomFichierParDefaut) {
       nomFichierParDefaut,
     )
 
+    if (Capacitor.getPlatform() === 'android') {
+      await declencherTelechargementAndroid(url)
+      return {
+        nom,
+        methode: 'fichier',
+        chemin: `Téléchargements/${nom}`,
+      }
+    }
+
     if (estElectron()) {
       const resultat = await telechargerViaElectron(url, nom, reponse.data)
       return { nom, methode: 'electron', ...resultat }
     }
 
-    if (estMobile()) {
-      return telechargerSurMobile(reponse.data, nom, url)
-    }
-
-    telechargerBlob(reponse.data, nom)
-
-    return { nom, methode: 'blob' }
+    return forcerTelechargement(reponse.data, nom)
   } catch (erreur) {
     if (erreur?.name === 'AbortError') {
       throw erreur
-    }
-
-    if (estElectron() && window.electronAPI?.telechargerFichier) {
-      return window.electronAPI.telechargerFichier(url, nomFichierParDefaut)
-    }
-
-    if (estMobile() && url) {
-      ouvrirUrl(url)
-      return { nom: nomFichierParDefaut, methode: 'ouverture' }
     }
 
     throw erreur

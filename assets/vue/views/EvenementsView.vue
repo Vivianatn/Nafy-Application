@@ -290,16 +290,21 @@ async function chargerEvenements() {
   erreur.value = ''
 
   try {
-    const [reponseDevis, reponseCalendrier] = await Promise.all([
-      api.get('/devis'),
-      api.get('/evenements'),
-    ])
+    const reponseDevis = await api.get('/devis')
     devis.value = Array.isArray(reponseDevis.data) ? reponseDevis.data : []
-    evenementsCalendrier.value = Array.isArray(reponseCalendrier.data) ? reponseCalendrier.data : []
   } catch {
     devis.value = []
     evenementsCalendrier.value = []
     erreur.value = 'Impossible de charger les événements.'
+    chargement.value = false
+    return
+  }
+
+  try {
+    const reponseCalendrier = await api.get('/evenements')
+    evenementsCalendrier.value = Array.isArray(reponseCalendrier.data) ? reponseCalendrier.data : []
+  } catch {
+    evenementsCalendrier.value = []
   } finally {
     chargement.value = false
   }

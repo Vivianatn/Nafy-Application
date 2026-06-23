@@ -10,17 +10,7 @@ const api = axios.create({
 })
 
 function estAppNativeEmbarquee() {
-  if (!Capacitor.isNativePlatform()) {
-    return false
-  }
-
-  const origine = window.location.origin
-
-  return (
-    origine.includes('localhost')
-    || origine.startsWith('capacitor://')
-    || origine.startsWith('ionic://')
-  )
+  return Capacitor.isNativePlatform()
 }
 
 export async function initApi() {
