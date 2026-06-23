@@ -13,6 +13,18 @@
       </select>
     </label>
 
+    <div v-if="!chargement && !erreur && evenementsTries.length > 0" class="evenements__options">
+      <button
+        type="button"
+        class="evenements__details-btn"
+        :aria-expanded="detailsDeplies"
+        @click="basculerDetails"
+      >
+        <span class="evenements__details-icone" :class="{ 'evenements__details-icone--replie': !detailsDeplies }" aria-hidden="true">›</span>
+        {{ detailsDeplies ? 'Replier les détails' : 'Afficher plus' }}
+      </button>
+    </div>
+
     <p v-if="chargement" class="evenements__etat evenements__etat--chargement">
       <span class="spinner" aria-hidden="true"></span>
       Chargement…
@@ -47,38 +59,7 @@
               :class="classeCarte(evenement)"
               :style="{ '--carte-i': index }"
             >
-              <article class="carte__corps">
-                <div class="carte__entete">
-                  <span class="carte__type">{{ evenement.sourceType === 'devis' ? 'Devis' : 'Événement' }}</span>
-                  <strong class="carte__numero">{{ libelleEntete(evenement) }}</strong>
-                </div>
-                <dl class="carte__infos">
-                  <div class="carte__ligne">
-                    <dt>Réservation</dt>
-                    <dd>{{ formaterDate(evenement.dateReservation) }}</dd>
-                  </div>
-                  <div class="carte__ligne">
-                    <dt>Créé le</dt>
-                    <dd>{{ formaterDateHeure(evenement.createdAt) }}</dd>
-                  </div>
-                  <div v-if="evenement.heureRecuperationVaisselle" class="carte__ligne">
-                    <dt>Récupération vaisselle</dt>
-                    <dd>{{ formaterHeureLongue(evenement.heureRecuperationVaisselle) }}</dd>
-                  </div>
-                  <div v-if="evenement.adresseEvenement" class="carte__ligne">
-                    <dt>Adresse</dt>
-                    <dd>{{ evenement.adresseEvenement }}</dd>
-                  </div>
-                  <div v-if="evenement.dateRentree" class="carte__ligne">
-                    <dt>Date de rentrée</dt>
-                    <dd>{{ formaterDate(evenement.dateRentree) }}</dd>
-                  </div>
-                  <div v-if="formaterPrix(evenement.prixFinal)" class="carte__ligne">
-                    <dt>Montant</dt>
-                    <dd>{{ formaterPrix(evenement.prixFinal) }}</dd>
-                  </div>
-                </dl>
-              </article>
+              <CarteEvenementItem :evenement="evenement" :details-deplies="detailsDeplies" />
             </li>
           </ul>
         </section>
@@ -92,38 +73,7 @@
           :class="classeCarte(evenement)"
           :style="{ '--carte-i': index }"
         >
-          <article class="carte__corps">
-            <div class="carte__entete">
-              <span class="carte__type">{{ evenement.sourceType === 'devis' ? 'Devis' : 'Événement' }}</span>
-              <strong class="carte__numero">{{ libelleEntete(evenement) }}</strong>
-            </div>
-            <dl class="carte__infos">
-              <div class="carte__ligne">
-                <dt>Réservation</dt>
-                <dd>{{ formaterDate(evenement.dateReservation) }}</dd>
-              </div>
-              <div class="carte__ligne">
-                <dt>Créé le</dt>
-                <dd>{{ formaterDateHeure(evenement.createdAt) }}</dd>
-              </div>
-              <div v-if="evenement.heureRecuperationVaisselle" class="carte__ligne">
-                <dt>Récupération vaisselle</dt>
-                <dd>{{ formaterHeureLongue(evenement.heureRecuperationVaisselle) }}</dd>
-              </div>
-              <div v-if="evenement.adresseEvenement" class="carte__ligne">
-                <dt>Adresse</dt>
-                <dd>{{ evenement.adresseEvenement }}</dd>
-              </div>
-              <div v-if="evenement.dateRentree" class="carte__ligne">
-                <dt>Date de rentrée</dt>
-                <dd>{{ formaterDate(evenement.dateRentree) }}</dd>
-              </div>
-              <div v-if="formaterPrix(evenement.prixFinal)" class="carte__ligne">
-                <dt>Montant</dt>
-                <dd>{{ formaterPrix(evenement.prixFinal) }}</dd>
-              </div>
-            </dl>
-          </article>
+          <CarteEvenementItem :evenement="evenement" :details-deplies="detailsDeplies" />
         </li>
       </ul>
     </div>
@@ -137,26 +87,30 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import api from '../api'
-import { formaterDate, formaterDateHeure } from '../composables/date'
-import { useHeuresRecuperation } from '../composables/heuresRecuperation'
+import CarteEvenementItem from '../components/CarteEvenementItem.vue'
 
-const { formaterHeureLongue } = useHeuresRecuperation()
+const CLE_DETAILS_EVENEMENTS = 'evenements-details-deplies'
 
 const ordre = ref('reservation-asc')
 const devis = ref([])
+const factures = ref([])
 const evenementsCalendrier = ref([])
 const chargement = ref(true)
 const erreur = ref('')
+const detailsDeplies = ref(localStorage.getItem(CLE_DETAILS_EVENEMENTS) !== '0')
 
 const evenements = computed(() => {
   const depuisDevis = devis.value
     .filter((item) => item.dateReservation)
     .map((item) => ({ ...item, sourceType: 'devis' }))
+  const depuisFactures = factures.value
+    .filter((item) => item.dateReservation)
+    .map((item) => ({ ...item, sourceType: 'facture' }))
   const depuisCalendrier = evenementsCalendrier.value.map((item) => ({
     ...item,
     sourceType: 'calendrier',
   }))
-  return [...depuisDevis, ...depuisCalendrier]
+  return [...depuisDevis, ...depuisFactures, ...depuisCalendrier]
 })
 
 const afficherParDate = computed(() =>
@@ -258,31 +212,9 @@ function classeCarte(evenement) {
   return 'carte--avenir'
 }
 
-function libelleNumero(evenement) {
-  return evenement.numero || String(evenement.id)
-}
-
-function libelleEntete(evenement) {
-  if (evenement.sourceType === 'calendrier') {
-    return evenement.titre || 'Sans titre'
-  }
-  return `n°${libelleNumero(evenement)}`
-}
-
-function formaterPrix(prix) {
-  if (prix === null || prix === undefined || prix === '') {
-    return null
-  }
-
-  const valeur = Number(prix)
-  if (Number.isNaN(valeur)) {
-    return null
-  }
-
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(valeur)
+function basculerDetails() {
+  detailsDeplies.value = !detailsDeplies.value
+  localStorage.setItem(CLE_DETAILS_EVENEMENTS, detailsDeplies.value ? '1' : '0')
 }
 
 async function chargerEvenements() {
@@ -290,21 +222,19 @@ async function chargerEvenements() {
   erreur.value = ''
 
   try {
-    const reponseDevis = await api.get('/devis')
+    const [reponseDevis, reponseFactures, reponseCalendrier] = await Promise.all([
+      api.get('/devis'),
+      api.get('/factures'),
+      api.get('/evenements'),
+    ])
     devis.value = Array.isArray(reponseDevis.data) ? reponseDevis.data : []
-  } catch {
-    devis.value = []
-    evenementsCalendrier.value = []
-    erreur.value = 'Impossible de charger les événements.'
-    chargement.value = false
-    return
-  }
-
-  try {
-    const reponseCalendrier = await api.get('/evenements')
+    factures.value = Array.isArray(reponseFactures.data) ? reponseFactures.data : []
     evenementsCalendrier.value = Array.isArray(reponseCalendrier.data) ? reponseCalendrier.data : []
   } catch {
+    devis.value = []
+    factures.value = []
     evenementsCalendrier.value = []
+    erreur.value = 'Impossible de charger les événements.'
   } finally {
     chargement.value = false
   }
@@ -317,6 +247,41 @@ onMounted(chargerEvenements)
 @use '../../styles/variables' as *;
 
 .evenements {
+  &__options {
+    margin-bottom: $space-md;
+  }
+
+  &__details-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-xs;
+    padding: $space-xs $space-sm;
+    border: 1px solid rgba(204, 167, 97, 0.45);
+    border-radius: $radius;
+    background: $color-bg;
+    color: $color-text;
+    font-size: var(--fs-petit);
+    cursor: pointer;
+    transition:
+      background-color $transition,
+      border-color $transition;
+
+    &:hover {
+      background: $color-gold-ghost;
+      border-color: rgba(204, 167, 97, 0.65);
+    }
+  }
+
+  &__details-icone {
+    display: inline-block;
+    transition: transform $transition;
+    transform: rotate(90deg);
+
+    &--replie {
+      transform: rotate(0deg);
+    }
+  }
+
   &__etat {
     color: $color-muted;
     font-size: var(--fs-base);
@@ -484,82 +449,22 @@ onMounted(chargerEvenements)
     box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
   }
 
-  &__corps {
-    border: 1px solid rgba(204, 167, 97, 0.28);
-    border-radius: calc($radius + 2px);
-    background: linear-gradient(145deg, $color-bg 0%, rgba(204, 167, 97, 0.04) 100%);
-    padding: $space-md;
-    transition:
-      border-color $transition,
-      box-shadow $transition,
-      transform $transition;
-  }
-
-  &:hover .carte__corps {
+  &:hover :deep(.carte__corps) {
     border-color: rgba(204, 167, 97, 0.55);
     box-shadow: $shadow-soft;
     transform: translateY(-1px);
   }
 
-  &--aujourdhui .carte__corps {
+  &--aujourdhui :deep(.carte__corps) {
     border-color: rgba(204, 167, 97, 0.55);
     box-shadow: 0 0 0 2px $color-gold-ghost;
   }
 
-  &--passe .carte__corps {
+  &--passe :deep(.carte__corps) {
     opacity: 0.82;
   }
-
-  &__entete {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $space-sm;
-    margin-bottom: $space-sm;
-  }
-
-  &__type {
-    font-size: var(--fs-petit);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: $color-gold-dark;
-    background: rgba(204, 167, 97, 0.12);
-    padding: 3px 8px;
-    border-radius: 999px;
-  }
-
-  &__numero {
-    font-size: var(--fs-base);
-    font-weight: 400;
-  }
-
-  &__infos {
-    display: flex;
-    flex-direction: column;
-    gap: $space-xs;
-    margin: 0;
-  }
-
-  &__ligne {
-    display: grid;
-    grid-template-columns: minmax(110px, 38%) 1fr;
-    gap: $space-sm;
-    align-items: baseline;
-
-    dt {
-      margin: 0;
-      font-size: var(--fs-petit);
-      color: $color-muted;
-    }
-
-    dd {
-      margin: 0;
-      font-size: var(--fs-base);
-      color: $color-text;
-      word-break: break-word;
-    }
-  }
 }
+
 
 @keyframes evenement-fade-up {
   from {
@@ -574,7 +479,7 @@ onMounted(chargerEvenements)
 }
 
 @media (min-width: $bp-tablet) {
-  .carte__ligne {
+  :deep(.carte__ligne) {
     grid-template-columns: 160px 1fr;
   }
 }
@@ -585,7 +490,7 @@ onMounted(chargerEvenements)
     animation: none;
   }
 
-  .carte__corps {
+  :deep(.carte__corps) {
     transition-duration: 0.01ms !important;
   }
 }

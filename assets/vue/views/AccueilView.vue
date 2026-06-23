@@ -52,7 +52,23 @@
 
         <Transition name="calendrier-detail">
           <div v-if="dateSelectionnee" class="calendrier__detail">
-            <h3 class="calendrier__detail-titre">{{ titreDateSelectionnee }}</h3>
+            <div class="calendrier__detail-entete">
+              <h3 class="calendrier__detail-titre">{{ titreDateSelectionnee }}</h3>
+              <button
+                v-if="evenementsJourSelectionne.length > 0"
+                type="button"
+                class="calendrier__descriptions-btn"
+                :aria-expanded="descriptionsDepliees"
+                @click="basculerDescriptions"
+              >
+                <span
+                  class="calendrier__descriptions-icone"
+                  :class="{ 'calendrier__descriptions-icone--replie': !descriptionsDepliees }"
+                  aria-hidden="true"
+                >›</span>
+                {{ descriptionsDepliees ? 'Replier les descriptions' : 'Déplier les descriptions' }}
+              </button>
+            </div>
 
             <p v-if="evenementsJourSelectionne.length === 0" class="historique__etat">
               Aucun événement ce jour-là.
@@ -72,26 +88,30 @@
                   </span>
                   <strong class="historique__numero">{{ libelleEnteteCalendrier(item) }}</strong>
                 </div>
-                <p v-if="noteCalendrier(item)" class="historique__note">{{ noteCalendrier(item) }}</p>
-                <p v-if="item.sourceType === 'devis' || item.sourceType === 'facture'" class="historique__ligne">
-                  Créé le {{ formaterDateHeure(item.createdAt) }}
-                </p>
-                <p v-if="item.adresseEvenement" class="historique__ligne">{{ item.adresseEvenement }}</p>
-                <p v-if="item.dateRentree" class="historique__ligne">
-                  Rentrée le {{ formaterDate(item.dateRentree) }}
-                </p>
-                <HeureRecuperationVaisselle
-                  v-if="item.sourceType === 'devis'"
-                  :devis-id="item.id"
-                  :heure-initiale="item.heureRecuperationVaisselle ?? ''"
-                  @heure-change="mettreAJourHeureEvenement"
-                />
-                <HeureRecuperationVaisselle
-                  v-else
-                  :evenement-id="item.id"
-                  :heure-initiale="item.heureRecuperationVaisselle ?? ''"
-                  @heure-change="mettreAJourHeureCalendrier"
-                />
+                <Transition name="calendrier-desc">
+                  <div v-if="descriptionsDepliees" class="historique__description">
+                    <p v-if="noteCalendrier(item)" class="historique__note">{{ noteCalendrier(item) }}</p>
+                    <p v-if="item.sourceType === 'devis' || item.sourceType === 'facture'" class="historique__ligne">
+                      Créé le {{ formaterDateHeure(item.createdAt) }}
+                    </p>
+                    <p v-if="item.adresseEvenement" class="historique__ligne">{{ item.adresseEvenement }}</p>
+                    <p v-if="item.dateRentree" class="historique__ligne">
+                      Rentrée le {{ formaterDate(item.dateRentree) }}
+                    </p>
+                    <HeureRecuperationVaisselle
+                      v-if="item.sourceType === 'devis'"
+                      :devis-id="item.id"
+                      :heure-initiale="item.heureRecuperationVaisselle ?? ''"
+                      @heure-change="mettreAJourHeureEvenement"
+                    />
+                    <HeureRecuperationVaisselle
+                      v-else-if="item.sourceType === 'calendrier'"
+                      :evenement-id="item.id"
+                      :heure-initiale="item.heureRecuperationVaisselle ?? ''"
+                      @heure-change="mettreAJourHeureCalendrier"
+                    />
+                  </div>
+                </Transition>
                 <button
                   type="button"
                   class="bouton bouton--secondaire historique__supprimer"
@@ -104,19 +124,38 @@
             </ul>
 
             <form class="calendrier__ajout" @submit.prevent="creerEvenementCalendrier">
-              <h4 class="calendrier__ajout-titre">Ajouter un événement</h4>
+              <div class="calendrier__ajout-entete">
+                <h4 class="calendrier__ajout-titre">Ajouter un événement</h4>
+                <button
+                  type="button"
+                  class="calendrier__descriptions-btn"
+                  :aria-expanded="ajoutEvenementDeplie"
+                  @click="basculerAjoutEvenement"
+                >
+                  <span
+                    class="calendrier__descriptions-icone"
+                    :class="{ 'calendrier__descriptions-icone--replie': !ajoutEvenementDeplie }"
+                    aria-hidden="true"
+                  >›</span>
+                  {{ ajoutEvenementDeplie ? 'Masquer les détails' : 'Afficher plus de champs' }}
+                </button>
+              </div>
               <label class="champ">Titre
                 <input type="text" v-model.trim="nouvelEvenement.titre" placeholder="Ex. Mariage Dupont" />
               </label>
-              <label class="champ">Adresse de l'événement
-                <input type="text" v-model.trim="nouvelEvenement.adresseEvenement" />
-              </label>
-              <label class="champ">Date de rentrée
-                <input type="date" v-model="nouvelEvenement.dateRentree" />
-              </label>
-              <label class="champ">Note
-                <textarea v-model.trim="nouvelEvenement.note" rows="2"></textarea>
-              </label>
+              <Transition name="calendrier-desc">
+                <div v-if="ajoutEvenementDeplie" class="calendrier__ajout-champs">
+                  <label class="champ">Adresse de l'événement
+                    <input type="text" v-model.trim="nouvelEvenement.adresseEvenement" />
+                  </label>
+                  <label class="champ">Date de rentrée
+                    <input type="date" v-model="nouvelEvenement.dateRentree" />
+                  </label>
+                  <label class="champ">Note
+                    <textarea v-model.trim="nouvelEvenement.note" rows="2"></textarea>
+                  </label>
+                </div>
+              </Transition>
               <button type="submit" class="bouton bouton--bloc" :disabled="creationEvenementEnCours">
                 {{ creationEvenementEnCours ? 'Création…' : 'Ajouter au calendrier' }}
               </button>
@@ -201,6 +240,8 @@ const { formaterHeure } = useHeuresRecuperation()
 const route = useRoute()
 
 const joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const CLE_DESCRIPTIONS_CALENDRIER = 'calendrier-descriptions-depliees'
+const CLE_AJOUT_EVENEMENT = 'calendrier-ajout-evenement-deplie'
 const nomsMois = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
@@ -243,6 +284,8 @@ function estAujourdHui(jour) {
 }
 
 const dateSelectionnee = ref(null)
+const descriptionsDepliees = ref(localStorage.getItem(CLE_DESCRIPTIONS_CALENDRIER) !== '0')
+const ajoutEvenementDeplie = ref(localStorage.getItem(CLE_AJOUT_EVENEMENT) !== '0')
 const nouvelEvenement = reactive({
   titre: '',
   adresseEvenement: '',
@@ -254,6 +297,16 @@ const creationEvenementEnCours = ref(false)
 function selectionnerJour(jour) {
   if (!jour) return
   dateSelectionnee.value = new Date(annee.value, mois.value, jour)
+}
+
+function basculerDescriptions() {
+  descriptionsDepliees.value = !descriptionsDepliees.value
+  localStorage.setItem(CLE_DESCRIPTIONS_CALENDRIER, descriptionsDepliees.value ? '1' : '0')
+}
+
+function basculerAjoutEvenement() {
+  ajoutEvenementDeplie.value = !ajoutEvenementDeplie.value
+  localStorage.setItem(CLE_AJOUT_EVENEMENT, ajoutEvenementDeplie.value ? '1' : '0')
 }
 
 function estSelectionne(jour) {
@@ -745,11 +798,51 @@ onMounted(async () => {
     background: linear-gradient(180deg, rgba(204, 167, 97, 0.06) 0%, $color-bg 100%);
   }
 
+  &__detail-entete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-sm;
+    margin-bottom: $space-md;
+  }
+
   &__detail-titre {
     font-size: var(--fs-base);
     font-weight: 400;
-    margin-bottom: $space-md;
+    margin: 0;
     text-transform: capitalize;
+  }
+
+  &__descriptions-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-xs;
+    padding: $space-xs $space-sm;
+    border: 1px solid rgba(204, 167, 97, 0.45);
+    border-radius: $radius;
+    background: $color-bg;
+    color: $color-text;
+    font-size: var(--fs-petit);
+    cursor: pointer;
+    transition:
+      background-color $transition,
+      border-color $transition;
+
+    &:hover {
+      background: $color-gold-ghost;
+      border-color: rgba(204, 167, 97, 0.65);
+    }
+  }
+
+  &__descriptions-icone {
+    display: inline-block;
+    transition: transform $transition;
+    transform: rotate(90deg);
+
+    &--replie {
+      transform: rotate(0deg);
+    }
   }
 
   &__ajout {
@@ -761,9 +854,23 @@ onMounted(async () => {
     gap: $space-sm;
   }
 
+  &__ajout-entete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-sm;
+  }
+
+  &__ajout-champs {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+  }
+
   &__ajout-titre {
     font-size: var(--fs-base);
-    margin-bottom: $space-xs;
+    margin: 0;
   }
 }
 
@@ -786,6 +893,26 @@ onMounted(async () => {
 .calendrier-detail-enter-to,
 .calendrier-detail-leave-from {
   max-height: 800px;
+}
+
+.calendrier-desc-enter-active,
+.calendrier-desc-leave-active {
+  overflow: hidden;
+  transition:
+    opacity 0.25s ease-out,
+    max-height 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.calendrier-desc-enter-from,
+.calendrier-desc-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+.calendrier-desc-enter-to,
+.calendrier-desc-leave-from {
+  opacity: 1;
+  max-height: 1200px;
 }
 
 .historique {
@@ -909,6 +1036,13 @@ onMounted(async () => {
     align-items: baseline;
     justify-content: space-between;
     gap: $space-sm;
+    margin-bottom: $space-xs;
+  }
+
+  &__description {
+    display: flex;
+    flex-direction: column;
+    gap: $space-xs;
     margin-bottom: $space-xs;
   }
 
