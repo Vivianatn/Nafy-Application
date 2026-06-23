@@ -24,7 +24,10 @@ class FactureController extends AbstractController
                 'numero' => $item->getNumero(),
                 'createdAt' => $item->getCreatedAt()->format(\DateTimeInterface::ATOM),
                 'dateReservation' => $item->getDateReservation()?->format('Y-m-d'),
+                'adresseEvenement' => $item->getAdresseEvenement(),
+                'dateRentree' => $item->getDateRentree()?->format('Y-m-d'),
                 'prixFinal' => $item->getPrixFinal(),
+                'noteCommande' => $item->getNoteCommande() ?? '',
             ],
             $factureRepository->findAllOrderedByCreatedAtDesc(),
         );

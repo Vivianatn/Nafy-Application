@@ -29,6 +29,7 @@ class DevisController extends AbstractController
                 'adresseEvenement' => $item->getAdresseEvenement(),
                 'dateRentree' => $item->getDateRentree()?->format('Y-m-d'),
                 'prixFinal' => $item->getPrixFinal(),
+                'noteCommande' => $item->getNoteCommande() ?? '',
             ],
             $devisRepository->findAllOrderedByCreatedAtDesc(),
         );

@@ -64,12 +64,16 @@
                 class="historique__item"
               >
                 <div class="historique__entete">
-                  <span class="historique__type">{{ item.sourceType === 'devis' ? 'Devis' : 'Événement' }}</span>
-                  <strong class="historique__numero">
-                    {{ item.sourceType === 'devis' ? 'n°' + libelleNumero(item) : (item.titre || 'Sans titre') }}
-                  </strong>
+                  <span
+                    class="historique__type"
+                    :class="item.sourceType !== 'calendrier' ? 'historique__type--' + item.sourceType : undefined"
+                  >
+                    {{ libelleTypeCalendrier(item) }}
+                  </span>
+                  <strong class="historique__numero">{{ libelleEnteteCalendrier(item) }}</strong>
                 </div>
-                <p v-if="item.sourceType === 'devis'" class="historique__ligne">
+                <p v-if="noteCalendrier(item)" class="historique__note">{{ noteCalendrier(item) }}</p>
+                <p v-if="item.sourceType === 'devis' || item.sourceType === 'facture'" class="historique__ligne">
                   Créé le {{ formaterDateHeure(item.createdAt) }}
                 </p>
                 <p v-if="item.adresseEvenement" class="historique__ligne">{{ item.adresseEvenement }}</p>
@@ -142,6 +146,7 @@
             </span>
             <strong class="historique__numero">n°{{ libelleNumero(commande) }}</strong>
           </div>
+          <p v-if="commande.noteCommande" class="historique__note">{{ commande.noteCommande }}</p>
           <div class="historique__corps">
             <p class="historique__ligne">Créé le {{ formaterDateHeure(commande.createdAt) }}</p>
             <p v-if="commande.dateReservation" class="historique__ligne">
@@ -291,6 +296,10 @@ const evenementsDevis = computed(() =>
   devis.value.filter((item) => item.dateReservation),
 )
 
+const evenementsFactures = computed(() =>
+  factures.value.filter((item) => item.dateReservation),
+)
+
 const commandes = computed(() =>
   [...devis.value.map((item) => ({ ...item, type: 'devis' })), ...factures.value.map((item) => ({ ...item, type: 'facture' }))].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
@@ -310,7 +319,10 @@ function evenementsPourCle(cle) {
   const devisJour = evenementsDevis.value
     .filter((e) => e.dateReservation === cle)
     .map((e) => ({ ...e, sourceType: 'devis' }))
-  return [...calendrier, ...devisJour]
+  const facturesJour = evenementsFactures.value
+    .filter((e) => e.dateReservation === cle)
+    .map((e) => ({ ...e, sourceType: 'facture' }))
+  return [...calendrier, ...devisJour, ...facturesJour]
 }
 
 function aEvenement(jour) {
@@ -433,8 +445,8 @@ async function creerEvenementCalendrier() {
 }
 
 async function supprimerItemCalendrier(item) {
-  if (item.sourceType === 'devis') {
-    await supprimerCommande('devis', item.id, libelleNumero(item))
+  if (item.sourceType === 'devis' || item.sourceType === 'facture') {
+    await supprimerCommande(item.sourceType, item.id, libelleNumero(item))
     return
   }
 
@@ -485,6 +497,25 @@ async function supprimerCommande(type, id, numero) {
 
 function libelleNumero(commande) {
   return commande.numero || String(commande.id)
+}
+
+function libelleTypeCalendrier(item) {
+  if (item.sourceType === 'devis') return 'Devis'
+  if (item.sourceType === 'facture') return 'Facture'
+  return 'Événement'
+}
+
+function libelleEnteteCalendrier(item) {
+  if (item.sourceType === 'calendrier') {
+    return item.titre || 'Sans titre'
+  }
+  return `n°${libelleNumero(item)}`
+}
+
+function noteCalendrier(item) {
+  if (item.noteCommande) return item.noteCommande
+  if (item.sourceType === 'calendrier' && item.note) return item.note
+  return ''
 }
 
 async function telechargerCommande(commande) {
@@ -897,6 +928,25 @@ onMounted(async () => {
     font-size: var(--fs-base);
     color: $color-text;
     margin-top: $space-xs;
+  }
+
+  &__note {
+    font-size: var(--fs-base);
+    color: $color-text;
+    font-style: italic;
+    margin-top: $space-xs;
+    line-height: 1.4;
+  }
+
+  &__type {
+    &--devis {
+      background: rgba(204, 167, 97, 0.28);
+    }
+
+    &--facture {
+      background: rgba(46, 125, 50, 0.14);
+      color: $color-success;
+    }
   }
 }
 </style>
