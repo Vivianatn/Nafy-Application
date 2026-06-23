@@ -28,11 +28,11 @@
         <span v-if="erreurs.telephone" class="champ__erreur">{{ erreurs.telephone }}</span>
       </label>
       <label class="champ">Mot de passe
-        <input type="password" name="motDePasse" v-model="form.motDePasse" />
+        <ChampMotDePasse v-model="form.motDePasse" name="motDePasse" autocomplete="new-password" />
         <span v-if="erreurs.motDePasse" class="champ__erreur">{{ erreurs.motDePasse }}</span>
       </label>
       <label class="champ">Confirmation du mot de passe
-        <input type="password" name="confirmationMotDePasse" v-model="form.confirmationMotDePasse" />
+        <ChampMotDePasse v-model="form.confirmationMotDePasse" name="confirmationMotDePasse" autocomplete="new-password" />
         <span v-if="erreurs.confirmationMotDePasse" class="champ__erreur">{{ erreurs.confirmationMotDePasse }}</span>
       </label>
 
@@ -47,6 +47,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
+import ChampMotDePasse from '../components/ChampMotDePasse.vue'
 import { useNotification } from '../composables/notification'
 
 const router = useRouter()

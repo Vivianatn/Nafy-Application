@@ -36,10 +36,9 @@
 
           <label class="champ">
             Mot de passe
-            <input
-              type="password"
-              name="motDePasse"
+            <ChampMotDePasse
               v-model="motDePasse"
+              name="motDePasse"
               autocomplete="current-password"
               placeholder="Votre mot de passe"
             />
@@ -69,6 +68,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/auth'
 import { chargerOrganisateur } from '../composables/organisateur'
+import ChampMotDePasse from '../components/ChampMotDePasse.vue'
 
 const route = useRoute()
 const router = useRouter()

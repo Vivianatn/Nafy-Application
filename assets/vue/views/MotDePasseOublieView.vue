@@ -27,13 +27,13 @@
 
           <label class="champ">
             Nouveau mot de passe
-            <input type="password" v-model="motDePasse" autocomplete="new-password" />
+            <ChampMotDePasse v-model="motDePasse" autocomplete="new-password" />
             <span v-if="erreurs.motDePasse" class="champ__erreur">{{ erreurs.motDePasse }}</span>
           </label>
 
           <label class="champ">
             Confirmation
-            <input type="password" v-model="confirmationMotDePasse" autocomplete="new-password" />
+            <ChampMotDePasse v-model="confirmationMotDePasse" autocomplete="new-password" />
             <span v-if="erreurs.confirmationMotDePasse" class="champ__erreur">{{ erreurs.confirmationMotDePasse }}</span>
           </label>
 
@@ -53,6 +53,7 @@
 <script setup>
 import { ref } from 'vue'
 import api from '../api'
+import ChampMotDePasse from '../components/ChampMotDePasse.vue'
 
 const identifiant = ref('')
 const motDePasse = ref('')
