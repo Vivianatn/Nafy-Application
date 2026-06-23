@@ -110,7 +110,7 @@ class DevisController extends AbstractController
         }
 
         $prix = $factory->calculerPrixDepuisDonnees($data, false);
-        $facture = $factory->creerFacture($data, $prix);
+        $facture = $factory->creerFacture($data, $prix, $devis->getNumero());
 
         return $this->json([
             'id' => $facture->getId(),

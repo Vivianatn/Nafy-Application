@@ -58,7 +58,7 @@ final class CommandeFactory
      * @param array<string, mixed> $data
      * @param array<string, string> $prix
      */
-    public function creerFacture(array $data, array $prix): Facture
+    public function creerFacture(array $data, array $prix, ?string $numeroPrefere = null): Facture
     {
         $facture = new Facture();
         $this->hydraterCommande($facture, $data, $prix);
@@ -78,7 +78,7 @@ final class CommandeFactory
             $facture->addLigneKit($ligne);
         }
 
-        $facture->setNumero($this->numeroGenerator->genererPourFacture($data));
+        $facture->setNumero($this->numeroGenerator->genererPourFacture($data, $numeroPrefere));
 
         $this->entityManager->persist($facture);
         $this->entityManager->flush();

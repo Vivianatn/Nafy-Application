@@ -42,6 +42,11 @@ class FactureRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function existsByNumero(string $numero): bool
+    {
+        return $this->count(['numero' => $numero]) > 0;
+    }
+
     /**
      * @return list<Facture>
      */
