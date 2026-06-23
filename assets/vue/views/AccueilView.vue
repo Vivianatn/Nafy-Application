@@ -394,18 +394,26 @@ watch(dateSelectionnee, (date) => {
 
 async function chargerDonnees() {
   chargement.value = true
+
   try {
-    const [reponseDevis, reponseFactures, reponseEvenements] = await Promise.all([
+    const [reponseDevis, reponseFactures] = await Promise.all([
       api.get('/devis'),
       api.get('/factures'),
-      api.get('/evenements'),
     ])
     devis.value = reponseDevis.data
     factures.value = reponseFactures.data
-    evenementsCalendrier.value = Array.isArray(reponseEvenements.data) ? reponseEvenements.data : []
   } catch {
     devis.value = []
     factures.value = []
+    evenementsCalendrier.value = []
+    chargement.value = false
+    return
+  }
+
+  try {
+    const reponseEvenements = await api.get('/evenements')
+    evenementsCalendrier.value = Array.isArray(reponseEvenements.data) ? reponseEvenements.data : []
+  } catch {
     evenementsCalendrier.value = []
   } finally {
     chargement.value = false
